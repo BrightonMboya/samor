@@ -1,0 +1,510 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import { localePath, useTranslations, whatsappLink, type Locale } from '../i18n/ui';
+import { getInfoPage, infoUi, type ImageKey } from '../data/pages';
+
+import ourStory from '../assets/images/our-story.jpg';
+import guideTravellers from '../assets/images/guide-travellers.jpg';
+import rangers from '../assets/images/rangers.jpg';
+import craterPlains from '../assets/images/crater-plains.jpg';
+import familyGuide from '../assets/images/family-guide.jpg';
+import lanternDinner from '../assets/images/lantern-dinner.jpg';
+import treeLionVehicle from '../assets/images/tree-lion-vehicle.jpg';
+import migrationWalk from '../assets/images/migration-walk.jpg';
+import ctaCampfire from '../assets/images/cta-campfire.jpg';
+import dhow from '../assets/images/dhow.jpg';
+
+/*
+ * Template for the info pages (About, Travel information, Cost breakdown, Safari add-ons).
+ * Copy lives in src/data/pages/{en,ar}.ts. Layout: a split page head, an "On this page"
+ * bar that sticks under the header, then one band per section with its heading in a
+ * rail beside the content, and a forest closing band.
+ */
+interface Props {
+  locale: Locale;
+  slug: string;
+}
+const { locale, slug } = Astro.props;
+const page = getInfoPage(locale, slug);
+const ui = infoUi[locale];
+const t = useTranslations(locale);
+const href = (p: string) => localePath(locale, p);
+const waText = locale === 'ar' ? 'مرحبًا سَمُر، أريد التخطيط لرحلة سفاري' : "Hello Samur, I'd like to plan a safari";
+
+const images: Record<ImageKey, ImageMetadata> = {
+  'our-story': ourStory,
+  'guide-travellers': guideTravellers,
+  rangers,
+  'crater-plains': craterPlains,
+  'family-guide': familyGuide,
+  'lantern-dinner': lanternDinner,
+  'tree-lion-vehicle': treeLionVehicle,
+  'migration-walk': migrationWalk,
+  'cta-campfire': ctaCampfire,
+  dhow,
+};
+const jumps = page.sections.filter((s) => s.jump);
+---
+
+<BaseLayout locale={locale} path={`/${slug}`} title={page.eyebrow} description={page.lead[0]} image={images[page.image]}>
+  <section class="head">
+    <div class="container head-grid">
+      <div class="head-copy">
+        <h1 class="h1">{page.title}</h1>
+        {page.lead.map((p) => <p class="intro muted">{p}</p>)}
+        <div class="head-actions">
+          <a class="btn btn-fire" href={href('/plan-your-trip')}>{ui.plan}<Icon name="arrow" size={14} /></a>
+          <a class="link-fire" href={whatsappLink(waText)}><Icon name="whatsapp" size={16} />{ui.whatsapp}</a>
+        </div>
+      </div>
+      <div class="photo head-photo">
+        <Image src={images[page.image]} alt="" widths={[640, 1000, 1400]} sizes="(max-width: 900px) 100vw, 50vw" loading="eager" fetchpriority="high" />
+      </div>
+    </div>
+  </section>
+
+  {jumps.length > 1 && (
+    <nav class="jumps" aria-label={ui.onThisPage}>
+      <div class="container">
+        <ul>
+          {jumps.map((s) => (
+            <li><a href={`#${s.id}`}>{s.jump}</a></li>
+          ))}
+        </ul>
+      </div>
+    </nav>
+  )}
+
+  {page.sections.map((s) => (
+    <section class="band" id={s.id}>
+      <div class="container band-grid">
+        <header class="rail">
+          <h2 class="h2">{s.heading}</h2>
+          {s.standfirst && <p class="standfirst muted">{s.standfirst}</p>}
+        </header>
+        <div class="blocks">
+          {s.image && (
+            <div class="photo band-photo">
+              <Image src={images[s.image]} alt="" widths={[640, 1000, 1400]} sizes="(max-width: 900px) 100vw, 60vw" />
+            </div>
+          )}
+          {s.blocks.map((b) => {
+            if (b.type === 'text') return b.body.map((p) => <p class="text">{p}</p>);
+            if (b.type === 'list')
+              return (
+                <div class="list">
+                  {b.label && <p class="label">{b.label}</p>}
+                  <ul class:list={[b.columns === 2 && 'two']}>
+                    {b.items.map((item) => (
+                      <li><Icon name="check" size={15} stroke={2.4} />{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            if (b.type === 'cards')
+              return (
+                <ul class="cards">
+                  {b.items.map((c) => (
+                    <li>
+                      <h3 class="card-title">{c.heading}</h3>
+                      <p class="muted">{c.body}</p>
+                    </li>
+                  ))}
+                </ul>
+              );
+            if (b.type === 'note')
+              return (
+                <aside class="note">
+                  <p class="label">{b.label}</p>
+                  <p>{b.body}</p>
+                </aside>
+              );
+            if (b.type === 'faq')
+              return (
+                <div class="faqs">
+                  {b.items.map((f) => (
+                    <details>
+                      <summary>
+                        <span>{f.q}</span>
+                        <Icon name="chevron" size={14} stroke={2.4} class="chev" />
+                      </summary>
+                      <div class="answer">
+                        {f.a.map((p) => <p>{p}</p>)}
+                        {f.list && (
+                          <ul>
+                            {f.list.map((item) => <li><Icon name="check" size={15} stroke={2.4} />{item}</li>)}
+                          </ul>
+                        )}
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              );
+            if (b.type === 'table')
+              return (
+                <div class="table">
+                  <p class="label">{b.label}</p>
+                  <table>
+                    <thead><tr>{b.columns.map((c) => <th scope="col">{c}</th>)}</tr></thead>
+                    <tbody>
+                      {b.rows.map((r) => (
+                        <tr>{r.map((cell, i) => (i === 0 ? <th scope="row">{cell}</th> : <td>{cell}</td>))}</tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            if (b.type === 'meta')
+              return (
+                <dl class="meta-list">
+                  {b.items.map(([k, v]) => (
+                    <div><dt>{k}</dt><dd>{v}</dd></div>
+                  ))}
+                </dl>
+              );
+            if (b.type === 'link')
+              return <a class="link-fire" href={href(b.path)}>{b.label}<Icon name="arrow" size={14} /></a>;
+          })}
+        </div>
+      </div>
+    </section>
+  ))}
+
+  <section class="closing">
+    <div class="container closing-inner">
+      <h2 class="h2">{page.closing.heading}</h2>
+      <p class="intro">{page.closing.body}</p>
+      <div class="closing-actions">
+        <a class="btn btn-ivory btn-lg" href={href('/plan-your-trip')}>{ui.plan}<Icon name="arrow" size={14} /></a>
+        <a class="btn btn-ghost-light btn-lg" href={whatsappLink(waText)}><Icon name="whatsapp" size={18} />{t('common.whatsappPlanner')}</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* Page head */
+  .head {
+    padding-block: clamp(48px, 7vw, 96px);
+  }
+  .head-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(32px, 5vw, 72px);
+    align-items: center;
+  }
+  .head-copy {
+    display: grid;
+    gap: 18px;
+    justify-items: start;
+  }
+  .head-copy .h1 {
+    font-size: clamp(36px, 4.4vw, 54px);
+    text-wrap: balance;
+  }
+  .head-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px 28px;
+    margin-top: 8px;
+  }
+  .head-photo {
+    aspect-ratio: 5 / 4;
+    border-radius: var(--radius);
+  }
+
+  /* On this page */
+  .jumps {
+    position: sticky;
+    top: 88px;
+    z-index: 20;
+    background: var(--ivory);
+    border-block: 1px solid var(--line);
+  }
+  .jumps ul {
+    display: flex;
+    gap: 32px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .jumps a {
+    display: block;
+    padding-block: 18px;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 500;
+    white-space: nowrap;
+    text-decoration: none;
+    color: var(--forest-82);
+    border-bottom: 2px solid transparent;
+    transition: color 160ms ease-out, border-color 160ms ease-out;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .jumps a:hover {
+      color: var(--forest);
+      border-color: var(--fire);
+    }
+  }
+
+  /* Sections */
+  .band {
+    padding-block: clamp(56px, 7vw, 96px);
+    scroll-margin-top: 150px;
+  }
+  .band + .band {
+    border-top: 1px solid var(--line);
+  }
+  .band-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+    gap: clamp(32px, 6vw, 96px);
+    align-items: start;
+  }
+  .rail {
+    display: grid;
+    gap: 14px;
+    position: sticky;
+    top: 170px;
+  }
+  .rail .h2 {
+    text-wrap: balance;
+  }
+  .standfirst {
+    font-size: 17px;
+    line-height: 1.65;
+  }
+  .blocks {
+    display: grid;
+    gap: 28px;
+    max-width: 760px;
+  }
+  .band-photo {
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius);
+  }
+  .text {
+    font-size: 17px;
+    line-height: 1.75;
+    color: var(--forest-82);
+  }
+  .label {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    line-height: 16px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  :global(:root[lang='ar']) .label {
+    font-size: 14px;
+    letter-spacing: 0;
+  }
+  .list ul,
+  .answer ul {
+    display: grid;
+    gap: 10px 32px;
+  }
+  .list ul.two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .list li,
+  .answer li {
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  .list li :global(svg),
+  .answer li :global(svg) {
+    flex-shrink: 0;
+    translate: 0 2px;
+    color: var(--forest-45);
+  }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  /* Four cards (the seasons) read better as 2 × 2 than 3 + 1. */
+  .cards:has(> li:nth-child(4):last-child) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cards li {
+    display: grid;
+    gap: 10px;
+    align-content: start;
+    padding: 24px;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  .cards p {
+    font-size: 15px;
+    line-height: 1.65;
+  }
+  .note {
+    padding: 22px 24px;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-inline-start: 3px solid var(--forest);
+    border-radius: var(--radius-sm);
+  }
+  .note .label {
+    margin-bottom: 8px;
+  }
+  .note p:last-child {
+    font-size: 16px;
+    line-height: 1.65;
+  }
+
+  /* FAQs */
+  .faqs {
+    border-top: 1px solid var(--line);
+  }
+  details {
+    border-bottom: 1px solid var(--line);
+  }
+  summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    padding-block: 20px;
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.4;
+    cursor: pointer;
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary :global(.chev) {
+    flex-shrink: 0;
+    transition: transform 200ms ease-out;
+  }
+  details[open] summary :global(.chev) {
+    transform: rotate(180deg);
+  }
+  .answer {
+    display: grid;
+    gap: 12px;
+    padding-bottom: 22px;
+    max-width: 640px;
+    color: var(--forest-82);
+    font-size: 16px;
+    line-height: 1.7;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    summary:hover {
+      color: var(--fire);
+    }
+  }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-display);
+    font-size: 15px;
+  }
+  th,
+  td {
+    padding: 14px 12px;
+    text-align: start;
+    border-bottom: 1px solid var(--line);
+  }
+  thead th {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--forest-82);
+  }
+  tbody th {
+    font-weight: 600;
+  }
+  th:first-child,
+  td:first-child {
+    padding-inline-start: 0;
+  }
+
+  /* Facts */
+  .meta-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 20px 32px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+  }
+  .meta-list dt {
+    font-family: var(--font-display);
+    font-size: 13px;
+    color: var(--forest-82);
+  }
+  .meta-list dd {
+    margin: 4px 0 0;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.45;
+  }
+
+  /* Closing */
+  .closing {
+    background: var(--forest);
+    color: var(--ivory);
+    padding-block: clamp(72px, 9vw, 120px);
+  }
+  .closing-inner {
+    display: grid;
+    gap: 22px;
+    justify-items: center;
+    text-align: center;
+  }
+  .closing .h2 {
+    max-width: 760px;
+    text-wrap: balance;
+  }
+  .closing .intro {
+    max-width: 560px;
+  }
+  .closing-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 10px;
+  }
+
+  @media (max-width: 900px) {
+    .head-grid,
+    .band-grid {
+      grid-template-columns: 1fr;
+    }
+    .head-photo {
+      order: -1;
+      aspect-ratio: 16 / 10;
+    }
+    .rail {
+      position: static;
+    }
+    .jumps {
+      top: 68px;
+    }
+    .band {
+      scroll-margin-top: 130px;
+    }
+  }
+  @media (max-width: 600px) {
+    .list ul.two,
+    .cards:has(> li:nth-child(4):last-child) {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

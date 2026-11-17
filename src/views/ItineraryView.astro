@@ -1,0 +1,825 @@
+---
+import { Image } from 'astro:assets';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import StayCarousel from '../components/StayCarousel.astro';
+import { stayPhotos } from '../data/stays';
+import { getItinerary, itineraryUi, type ItinerarySlug } from '../data/itineraries';
+import { localePath, useTranslations, whatsappLink, contact, type Locale } from '../i18n/ui';
+import noura from '../assets/images/noura.jpg';
+
+interface Props {
+  locale: Locale;
+  slug: ItinerarySlug;
+}
+const { locale, slug } = Astro.props;
+const it = getItinerary(locale, slug);
+const u = itineraryUi[locale];
+const t = useTranslations(locale);
+const path = `/itineraries/${slug}`;
+const pad = (n: number) => String(n).padStart(2, '0');
+const tabs = [
+  ['overview', u.tabOverview],
+  ['days', u.tabDays],
+  ['included', u.tabIncluded],
+  ['know', u.tabKnow],
+  ['extras', u.tabExtras],
+];
+const quoteText = `${u.waIntro} ${it.name}.`;
+---
+
+<BaseLayout locale={locale} path={path} title={it.name} description={it.heroLine} image={it.heroImage}>
+  <!-- Hero -->
+  <section class="hero">
+    <Image src={it.heroImage} alt="" class="hero-img" widths={[800, 1440, 2000]} sizes="100vw" loading="eager" fetchpriority="high" />
+    <div class="hero-scrim"></div>
+    <div class="container hero-body">
+      <div class="hero-titles">
+        <h1 class="h1">{it.name}</h1>
+        <p class="intro">{it.heroLine}</p>
+      </div>
+      <dl class="hero-facts">
+        <div><dt class="meta">{u.duration}</dt><dd>12 {t('common.days')}</dd></div>
+        <div class="divider" aria-hidden="true"></div>
+        <div><dt class="meta">{u.perPerson}</dt><dd>{t('common.onRequest')}</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- Section tabs -->
+  <nav class="tabs" aria-label={it.name}>
+    <ul class="container">
+      {tabs.map(([id, label], i) => (
+        <li><a href={`#${id}`} class:list={[i === 0 && 'active']}>{label}</a></li>
+      ))}
+    </ul>
+  </nav>
+
+  <!-- Overview -->
+  <section class="section container overview" id="overview">
+    <div class="prose">
+      <h2 class="h2">{it.overview.heading}</h2>
+      {it.overview.paragraphs.map((p) => <p class="body-lg">{p}</p>)}
+      <dl class="facts">
+        {it.overview.facts.map(([k, v]) => (
+          <div><dt class="muted">{k}</dt><dd>{v}</dd></div>
+        ))}
+      </dl>
+    </div>
+    <aside class="rail">
+      <div class="rail-price">
+        <p class="meta muted">{u.railPrice}</p>
+        <p class="price-row"><span class="rail-big">{t('common.onRequest')}</span><span class="meta muted">{u.railExcl}</span></p>
+      </div>
+      <dl class="rail-meta">
+        {it.rail.map(([k, v]) => (
+          <div><dt class="muted">{k}</dt><dd>{v}</dd></div>
+        ))}
+      </dl>
+      <div class="rail-actions">
+        <a class="btn btn-fire" href={localePath(locale, `/plan-your-trip?trip=${slug}`)}>{u.quote}<Icon name="arrow" size={15} /></a>
+        <a class="planner" href={whatsappLink(quoteText)}>
+          <Image src={noura} alt="" width={96} class="avatar" />
+          <span><span class="planner-name">{u.talk}</span><span class="meta muted">{u.talkSub}</span></span>
+        </a>
+      </div>
+    </aside>
+  </section>
+
+  <!-- Route -->
+  <section class="section route">
+    <div class="container">
+      <div class="split-head">
+        <h2 class="h2">{u.routeHeading}</h2>
+        <p class="muted aside">{it.route.intro}</p>
+      </div>
+      <ol class="stops" style={`--stops:${it.route.stops.length}`}>
+        {it.route.stops.map((s) => (
+          <li>
+            <span class="eyebrow stop-days">{s.days}</span>
+            <span class="card-title">{s.place}</span>
+            <span class="meta muted">{s.note}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <!-- Day by day -->
+  <section class="section container" id="days">
+    <div class="split-head">
+      <h2 class="h2">{u.daysHeading}</h2>
+      <p class="muted aside">{u.daysIntro}</p>
+    </div>
+    <ol class="days">
+      {it.days.map((d, i) => (
+        <li class="day">
+          <div class="day-rail">
+            <span class="eyebrow muted">{t('common.day')}</span>
+            <span class="stat">{pad(i + 1)}</span>
+          </div>
+          <div class="day-body">
+            <h3 class="h3">{d.title}</h3>
+            <p class="body-lg day-text">{d.body}</p>
+            <dl class="day-facts">
+              <div><dt>{u.meals}</dt><dd>{d.meals}</dd></div>
+              <div><dt>{u.road}</dt><dd>{d.road}</dd></div>
+              <div class="wide"><dt>{d.highlightLabel}</dt><dd>{d.highlight}</dd></div>
+            </dl>
+            {d.stay && (
+              <div class="stays">
+                <p class="stay-label">{d.stay.label}</p>
+                <div class="stay">
+                  {d.stay.gallery ? (
+                    <StayCarousel photos={stayPhotos(d.stay.gallery)} name={d.stay.name} locale={locale} />
+                  ) : (
+                    <div class="photo stay-photo"><Image src={d.stay.photo} alt="" widths={[480, 800, 1200]} sizes="(max-width: 900px) 100vw, 720px" /></div>
+                  )}
+                  <div class="stay-text">
+                    <p class="card-title">{d.stay.name}</p>
+                    <p class="muted">{d.stay.description}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {d.note && <p class="note muted">{d.note}</p>}
+          </div>
+        </li>
+      ))}
+    </ol>
+  </section>
+
+  <!-- Inclusions -->
+  <section class="section inclusions" id="included">
+    <div class="container inc-grid">
+      <div>
+        <h2 class="h2">{u.coversHeading}</h2>
+        <p class="muted body-lg covers-intro">{it.coversIntro}</p>
+      </div>
+      <div>
+        <p class="list-head">{u.included}</p>
+        <ul class="ticks">
+          {it.included.map((x) => <li><Icon name="check" size={16} stroke={2.6} />{x}</li>)}
+        </ul>
+      </div>
+      <div>
+        <p class="list-head">{u.excluded}</p>
+        <ul class="ticks no">
+          {it.excluded.map((x) => <li><Icon name="x" size={14} />{x}</li>)}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Good to know -->
+  <section class="section know-section" id="know">
+    <div class="container">
+      <div class="split-head">
+        <h2 class="h2">{u.knowHeading}</h2>
+        <p class="muted aside">{u.knowIntro}</p>
+      </div>
+      <ul class="know">
+        {it.know.map((k) => (
+          <li>
+            <p class="card-title">{k.title}</p>
+            <p class="know-sub muted">{k.sub}</p>
+            <p class="know-body">{k.body}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <!-- Extras -->
+  <section class="section container extras" id="extras">
+    <div>
+      <h2 class="h2">{u.extrasHeading}</h2>
+      <p class="muted body-lg covers-intro">{u.extrasIntro}</p>
+    </div>
+    <ul class="extra-list">
+      {it.extras.map((x) => (
+        <li>
+          <span class="extra-day">{x.day}</span>
+          <span class="extra-title">{x.title}</span>
+          <span class="meta muted">{x.duration}</span>
+          <span class="extra-price">{t('common.onRequest')}</span>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <!-- Enquire -->
+  <section class="enquire">
+    <div class="container enq-grid">
+      <div class="enq-copy">
+        <h2 class="h2">{u.enquireHeading}</h2>
+        <p class="body-lg">{u.enquireBody}</p>
+      </div>
+      <form class="enq-form" data-wa={contact.whatsapp} data-intro={quoteText}>
+        <label><span>{u.fName}</span><input name="name" autocomplete="name" placeholder={u.fNamePh} required /></label>
+        <label><span>{u.fPhone}</span><input name="phone" type="tel" autocomplete="tel" placeholder={u.fPhonePh} dir="ltr" required /></label>
+        <label><span>{u.fMonth}</span><input name="month" placeholder={u.fMonthPh} /></label>
+        <label><span>{u.fWho}</span><input name="who" placeholder={u.fWhoPh} /></label>
+        <div class="enq-foot">
+          <button class="btn btn-ivory btn-lg" type="submit">{u.fSend}<Icon name="arrow" size={15} /></button>
+          <p class="meta">{u.fNote}</p>
+        </div>
+      </form>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  // Turn the short enquiry form into a pre-filled WhatsApp message.
+  for (const form of document.querySelectorAll<HTMLFormElement>('.enq-form')) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      const lines = [form.dataset.intro ?? ''];
+      for (const el of form.querySelectorAll('label')) {
+        const input = el.querySelector('input');
+        const value = input && String(data.get(input.name) ?? '').trim();
+        if (value) lines.push(`${el.querySelector('span')?.textContent}: ${value}`);
+      }
+      window.open(`https://wa.me/${form.dataset.wa}?text=${encodeURIComponent(lines.join('\n'))}`, '_blank', 'noopener');
+    });
+  }
+
+  // Highlight the tab for the section in view.
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('.tabs a')];
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        for (const a of links) a.classList.toggle('active', a.hash === `#${entry.target.id}`);
+      }
+    },
+    { rootMargin: '-45% 0px -50% 0px' },
+  );
+  for (const a of links) {
+    const target = document.querySelector(a.hash);
+    if (target) observer.observe(target);
+  }
+</script>
+
+<style>
+  .body-lg {
+    font-size: 17px;
+    line-height: 30px;
+  }
+
+  /* Hero */
+  .hero {
+    position: relative;
+    min-height: 620px;
+    display: flex;
+    align-items: flex-end;
+    background: var(--forest);
+    color: var(--ivory);
+    overflow: hidden;
+  }
+  .hero-img,
+  .hero-scrim {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .hero-img {
+    object-fit: cover;
+  }
+  .hero-scrim {
+    background: linear-gradient(180deg, #1e4d3633 0%, #1e4d3626 40%, #1e4d36d9 100%);
+  }
+  .hero-body {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 32px;
+    padding-block: 140px 64px;
+  }
+  .hero-titles {
+    display: grid;
+    gap: 16px;
+    max-width: 680px;
+  }
+  .hero-facts {
+    display: flex;
+    gap: 32px;
+    align-items: stretch;
+  }
+  .hero-facts div:not(.divider) {
+    display: grid;
+    gap: 4px;
+  }
+  .hero-facts dd {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 36px;
+  }
+  .divider {
+    width: 1px;
+    background: #f7f3ec40;
+  }
+
+  /* Tabs */
+  .tabs {
+    position: sticky;
+    top: 88px;
+    z-index: 40;
+    background: var(--ivory);
+    border-bottom: 1px solid var(--line);
+  }
+  .tabs ul {
+    display: flex;
+    gap: 32px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs a {
+    display: block;
+    padding-block: 22px 20px;
+    border-bottom: 2px solid transparent;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    text-decoration: none;
+    color: var(--forest-82);
+    transition: color 160ms ease-out, border-color 160ms ease-out;
+  }
+  .tabs a.active {
+    color: var(--forest);
+    border-color: var(--fire);
+  }
+  #overview,
+  #days,
+  #included,
+  #know,
+  #extras {
+    scroll-margin-top: 160px;
+  }
+
+  /* Overview */
+  .overview {
+    display: grid;
+    grid-template-columns: minmax(0, 760px) minmax(0, 420px);
+    justify-content: space-between;
+    gap: 48px;
+  }
+  .prose {
+    display: grid;
+    gap: 28px;
+    align-content: start;
+  }
+  .facts {
+    border-top: 1px solid var(--line);
+  }
+  .facts div {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 16px;
+    padding-block: 18px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-display);
+  }
+  .facts dt {
+    font-size: 14px;
+  }
+  .facts dd {
+    font-size: 16px;
+  }
+  .rail {
+    align-self: start;
+    position: sticky;
+    top: 180px;
+    background: var(--white);
+    border: 1px solid var(--line);
+    font-family: var(--font-display);
+  }
+  .rail-price {
+    padding: 32px 32px 28px;
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    gap: 6px;
+  }
+  .price-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 14px;
+  }
+  .rail-big {
+    font-size: 36px;
+    font-weight: 600;
+    line-height: 44px;
+  }
+  .rail-meta {
+    padding: 28px 32px;
+    display: grid;
+    gap: 14px;
+    border-bottom: 1px solid var(--line);
+    font-size: 15px;
+  }
+  .rail-meta div {
+    display: grid;
+    grid-template-columns: 116px minmax(0, 1fr);
+    gap: 8px;
+  }
+  .rail-meta dt {
+    font-size: 14px;
+  }
+  .rail-actions {
+    padding: 28px 32px 32px;
+    display: grid;
+    gap: 12px;
+  }
+  .rail-actions .btn {
+    min-height: 54px;
+  }
+  .planner {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    margin-top: 14px;
+    text-decoration: none;
+  }
+  .planner > span {
+    display: grid;
+    gap: 2px;
+  }
+  .planner-name {
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    object-fit: cover;
+    object-position: 50% 30%;
+  }
+
+  /* Shared heading row */
+  .split-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px 64px;
+    margin-bottom: 48px;
+  }
+  .aside {
+    max-width: 440px;
+    font-size: 16px;
+    line-height: 26px;
+    text-align: end;
+  }
+
+  /* Route */
+  .route {
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .stops {
+    display: grid;
+    grid-template-columns: repeat(var(--stops), minmax(0, 1fr));
+    border-top: 1px solid var(--line);
+  }
+  .stops li {
+    display: grid;
+    gap: 8px;
+    align-content: start;
+    padding: 28px 24px 0;
+    border-inline-start: 1px solid var(--line);
+  }
+  .stops li:first-child {
+    border-inline-start: 0;
+    padding-inline-start: 0;
+  }
+  .stop-days {
+    font-size: 13px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  /* Days */
+  .days {
+    border-top: 1px solid var(--line);
+  }
+  .day {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 56px;
+    padding-block: 56px;
+    border-bottom: 1px solid var(--line);
+  }
+  .day-rail {
+    display: grid;
+    gap: 4px;
+    align-content: start;
+  }
+  .day-rail .eyebrow {
+    font-size: 11px;
+  }
+  .day-body {
+    display: grid;
+    gap: 20px;
+  }
+  .day-text {
+    max-width: 900px;
+  }
+  .day-facts {
+    display: grid;
+    grid-template-columns: 232px 232px minmax(0, 1fr);
+    gap: 16px 32px;
+    font-family: var(--font-display);
+  }
+  .day-facts div {
+    display: grid;
+    gap: 4px;
+  }
+  .day-facts dt {
+    font-size: 13px;
+    color: var(--forest-82);
+  }
+  .day-facts dd {
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .stay-label {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  /* Photos (a carousel where the lodge has a gallery) above the name and description. */
+  .stay {
+    display: grid;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+  .stay-photo {
+    aspect-ratio: 16 / 10;
+  }
+  .stay-text {
+    display: grid;
+    gap: 8px;
+    align-content: center;
+    padding: 22px 24px 24px;
+  }
+  .note {
+    font-family: var(--font-display);
+    font-size: 15px;
+  }
+
+  /* Inclusions */
+  .inclusions {
+    background: var(--white);
+  }
+  .inc-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 380px) minmax(0, 440px) minmax(0, 340px);
+    justify-content: space-between;
+    gap: 48px;
+  }
+  .covers-intro {
+    margin-top: 20px;
+    max-width: 380px;
+  }
+  .list-head {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--line);
+  }
+  .ticks li {
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+    padding-block: 16px;
+    border-bottom: 1px solid var(--line);
+    font-size: 16px;
+    line-height: 25px;
+  }
+  .ticks :global(svg) {
+    translate: 0 3px;
+  }
+  .ticks.no li {
+    color: var(--forest-82);
+  }
+
+  /* Good to know */
+  .know {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1px solid var(--line);
+  }
+  .know li {
+    display: grid;
+    gap: 8px;
+    align-content: start;
+    padding: 28px 24px 40px;
+    border-inline-start: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .know li:nth-child(3n + 1) {
+    border-inline-start: 0;
+    padding-inline-start: 0;
+  }
+  .know-sub {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-style: italic;
+  }
+  :global(:root[lang='ar']) .know-sub {
+    font-style: normal;
+  }
+  .know-body {
+    font-size: 15px;
+    line-height: 24px;
+    padding-top: 4px;
+  }
+
+  /* Extras */
+  .extras {
+    display: grid;
+    grid-template-columns: minmax(0, 380px) minmax(0, 860px);
+    justify-content: space-between;
+    gap: 48px;
+    border-top: 1px solid var(--line);
+  }
+  .extra-list {
+    border-top: 1px solid var(--line);
+    align-self: start;
+  }
+  .extra-list li {
+    display: grid;
+    grid-template-columns: 90px minmax(0, 1fr) 190px auto;
+    gap: 16px;
+    align-items: center;
+    padding-block: 22px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-display);
+  }
+  .extra-day {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .extra-title,
+  .extra-price {
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 26px;
+  }
+
+  /* Enquire */
+  .enquire {
+    background: var(--forest);
+    color: var(--ivory);
+  }
+  .enq-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 560px) minmax(0, 672px);
+    justify-content: space-between;
+    gap: 48px;
+    padding-block: 96px;
+  }
+  .enq-copy {
+    display: grid;
+    gap: 24px;
+    align-content: start;
+  }
+  .enq-copy .body-lg {
+    color: #f7f3ecd9;
+  }
+  .enq-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px 32px;
+    font-family: var(--font-display);
+  }
+  .enq-form label {
+    display: grid;
+    gap: 8px;
+    font-size: 14px;
+    color: #f7f3ecb3;
+  }
+  .enq-form input {
+    padding: 4px 0 14px;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid #f7f3ec40;
+    color: var(--ivory);
+    font-size: 17px;
+    border-radius: 0;
+  }
+  .enq-form input::placeholder {
+    color: #f7f3ec66;
+  }
+  .enq-form input:focus {
+    outline: none;
+    border-bottom-color: var(--gold);
+  }
+  :global(:root[lang='ar']) .enq-form input[dir='ltr'] {
+    text-align: right;
+  }
+  .enq-foot {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px 28px;
+    margin-top: 8px;
+  }
+  .enq-foot .meta {
+    flex: 1 1 260px;
+    color: #f7f3ecb3;
+  }
+
+  @media (max-width: 1100px) {
+    .overview,
+    .inc-grid,
+    .extras,
+    .enq-grid {
+      grid-template-columns: 1fr;
+    }
+    .rail {
+      position: static;
+      max-width: 520px;
+    }
+    .day-facts {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .day-facts .wide {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (max-width: 900px) {
+    .tabs {
+      top: 68px;
+    }
+    .stops {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      row-gap: 28px;
+    }
+    .stops li:nth-child(odd) {
+      border-inline-start: 0;
+      padding-inline-start: 0;
+    }
+    .know {
+      grid-template-columns: 1fr;
+    }
+    .know li {
+      border-inline-start: 0;
+      padding-inline: 0;
+    }
+    .day {
+      grid-template-columns: 1fr;
+      gap: 16px;
+      padding-block: 40px;
+    }
+    .day-rail {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .aside {
+      text-align: start;
+    }
+    .extra-list li {
+      grid-template-columns: 70px minmax(0, 1fr);
+    }
+    .extra-list .meta,
+    .extra-price {
+      grid-column: 2;
+    }
+    .extra-title,
+    .extra-price {
+      font-size: 17px;
+    }
+  }
+  @media (max-width: 600px) {
+    .facts div {
+      grid-template-columns: 1fr;
+      gap: 4px;
+    }
+    .enq-form {
+      grid-template-columns: 1fr;
+    }
+    .hero {
+      min-height: 560px;
+    }
+    .rail-price,
+    .rail-meta,
+    .rail-actions {
+      padding-inline: 20px;
+    }
+  }
+</style>

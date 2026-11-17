@@ -1,0 +1,19 @@
+---
+/* Single-segment content pages: the info pages (about, travel-information, …) and the legal pages. */
+import { getCollection } from 'astro:content';
+import InfoView from '../../views/InfoView.astro';
+import LegalView from '../../views/LegalView.astro';
+import { infoSlugs } from '../../data/pages';
+
+export async function getStaticPaths() {
+  const legal = await getCollection('legal', (e) => e.id.startsWith('en/'));
+  return [
+    ...infoSlugs.map((page) => ({ params: { page }, props: { entry: undefined } })),
+    ...legal.map((entry) => ({ params: { page: entry.id.split('/').pop() }, props: { entry } })),
+  ];
+}
+const page = Astro.params.page!;
+const { entry } = Astro.props;
+---
+
+{entry ? <LegalView locale="en" entry={entry} /> : <InfoView locale="en" slug={page} />}

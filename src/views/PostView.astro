@@ -1,0 +1,227 @@
+---
+import { Image } from 'astro:assets';
+import { render } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostCard from '../components/PostCard.astro';
+import Icon from '../components/Icon.astro';
+import { localePath, useTranslations, whatsappLink, type Locale } from '../i18n/ui';
+import { formatDate, getPosts, journalUi, postSlug, type Post } from '../data/journal';
+
+/* One journal post: a centred title block, a wide hero, one reading column, a closing band, then other posts. */
+interface Props {
+  locale: Locale;
+  post: Post;
+}
+const { locale, post } = Astro.props;
+const ui = journalUi[locale];
+const t = useTranslations(locale);
+const slug = postSlug(post);
+const { Content } = await render(post);
+const others = (await getPosts(locale)).filter((p) => postSlug(p) !== slug).slice(0, 3);
+const site = Astro.site ?? new URL('https://samursafaris.com');
+const waText = locale === 'ar' ? `مرحبًا سَمُر، لدي سؤال عن: ${post.data.title}` : `Hello Samur, I have a question about: ${post.data.title}`;
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.data.title,
+  description: post.data.description,
+  datePublished: post.data.date.toISOString(),
+  inLanguage: locale,
+  url: new URL(localePath(locale, `/journal/${slug}`), site).href,
+  publisher: { '@type': 'Organization', name: 'Samur' },
+};
+---
+
+<BaseLayout locale={locale} path={`/journal/${slug}`} title={post.data.title} description={post.data.description} image={post.data.hero} ogType="article">
+  <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+  <article>
+    <header class="container head">
+      <a class="back meta" href={localePath(locale, '/journal')}><Icon name="back" size={14} />{ui.allPosts}</a>
+      <p class="eyebrow muted">{post.data.category} · {ui.read(post.data.readMinutes)}</p>
+      <h1 class="h1">{post.data.title}</h1>
+      <p class="intro muted">{post.data.description}</p>
+      <p class="meta muted"><time datetime={post.data.date.toISOString().slice(0, 10)}>{formatDate(post.data.date, locale)}</time></p>
+    </header>
+
+    <div class="container">
+      <div class="photo hero">
+        <Image src={post.data.hero} alt={post.data.heroAlt} widths={[800, 1200, 1600]} sizes="(max-width: 1100px) 100vw, 1100px" loading="eager" fetchpriority="high" />
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="prose">
+        <Content />
+      </div>
+    </div>
+  </article>
+
+  <section class="closing">
+    <div class="container closing-inner">
+      <h2 class="h2">{ui.ctaHeading}</h2>
+      <p class="intro">{ui.ctaBody}</p>
+      <div class="closing-actions">
+        <a class="btn btn-ivory btn-lg" href={localePath(locale, '/plan-your-trip')}>{ui.plan}<Icon name="arrow" size={14} /></a>
+        <a class="btn btn-ghost-light btn-lg" href={whatsappLink(waText)}><Icon name="whatsapp" size={18} />{t('common.whatsappPlanner')}</a>
+      </div>
+    </div>
+  </section>
+
+  {others.length > 0 && (
+    <section class="section more">
+      <div class="container">
+        <h2 class="h2">{ui.more}</h2>
+        <ul class="grid">
+          {others.map((p) => <PostCard post={p} locale={locale} />)}
+        </ul>
+      </div>
+    </section>
+  )}
+</BaseLayout>
+
+<style>
+  .head {
+    display: grid;
+    justify-items: center;
+    gap: 16px;
+    max-width: 880px;
+    padding-top: clamp(40px, 6vw, 80px);
+    text-align: center;
+  }
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    color: var(--forest-82);
+    text-decoration: none;
+  }
+  .back:hover {
+    color: var(--fire);
+  }
+  :global([dir='rtl']) .back :global(svg) {
+    transform: scaleX(-1);
+  }
+  .h1 {
+    font-size: clamp(34px, 4.6vw, 54px);
+    text-wrap: balance;
+  }
+  .intro {
+    max-width: 640px;
+    text-wrap: pretty;
+  }
+  .hero {
+    max-width: 1100px;
+    margin: clamp(32px, 4vw, 48px) auto 0;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Reading column */
+  .prose {
+    max-width: 700px;
+    margin: clamp(40px, 5vw, 64px) auto var(--section-y);
+    font-size: 18px;
+    line-height: 1.75;
+    color: var(--forest-82);
+  }
+  .prose :global(> * + *) {
+    margin-top: 1.1em;
+  }
+  .prose :global(> p:first-child) {
+    font-size: 20px;
+    line-height: 1.65;
+    color: var(--forest);
+  }
+  .prose :global(h2) {
+    margin-top: 2.2em;
+    font-family: var(--font-display);
+    font-size: clamp(24px, 2.4vw, 28px);
+    font-weight: 600;
+    line-height: 1.28;
+    color: var(--forest);
+    text-wrap: balance;
+  }
+  .prose :global(h3) {
+    margin-top: 1.8em;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--forest);
+  }
+  .prose :global(h2 + *),
+  .prose :global(h3 + *) {
+    margin-top: 0.6em;
+  }
+  .prose :global(strong) {
+    color: var(--forest);
+    font-weight: 600;
+  }
+  .prose :global(ul),
+  .prose :global(ol) {
+    padding-inline-start: 1.3em;
+  }
+  .prose :global(ul) {
+    list-style: disc;
+  }
+  .prose :global(ol) {
+    list-style: decimal;
+  }
+  .prose :global(li + li) {
+    margin-top: 0.5em;
+  }
+  .prose :global(li::marker) {
+    color: var(--forest-45);
+  }
+  .prose :global(a) {
+    color: var(--fire);
+    text-underline-offset: 3px;
+  }
+  /* Photos in the body run a little wider than the text. */
+  .prose :global(p:has(> img)) {
+    margin-block: 2.2em;
+    margin-inline: calc(-1 * min(80px, max(0px, (100vw - 700px) / 2 - var(--gutter))));
+  }
+  .prose :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Closing band, as on the info pages */
+  .closing {
+    background: var(--forest);
+    color: var(--ivory);
+    padding-block: clamp(72px, 9vw, 120px);
+  }
+  .closing-inner {
+    display: grid;
+    gap: 22px;
+    justify-items: center;
+    text-align: center;
+  }
+  .closing .h2 {
+    max-width: 760px;
+    text-wrap: balance;
+  }
+  .closing .intro {
+    max-width: 560px;
+  }
+  .closing-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 10px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+    gap: 48px 26px;
+    margin-top: 40px;
+  }
+</style>

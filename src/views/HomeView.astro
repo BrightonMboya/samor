@@ -1,0 +1,841 @@
+---
+import { Image } from 'astro:assets';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import ItineraryCard from '../components/ItineraryCard.astro';
+import PostCard from '../components/PostCard.astro';
+import { getPosts, journalUi } from '../data/journal';
+import { home } from '../data/home';
+import { itineraries, getItinerary } from '../data/itineraries';
+import { localePath, useTranslations, whatsappLink, type Locale } from '../i18n/ui';
+
+import heroImg from '../assets/images/migration-walk.jpg';
+import tileMigration from '../assets/images/migration-walk.jpg';
+import tileFamily from '../assets/images/tree-lion-vehicle.jpg';
+import tileHoneymoon from '../assets/images/lantern-dinner.jpg';
+import tileTailor from '../assets/images/guide-travellers.jpg';
+import spotMain from '../assets/images/tarangire-elephants.jpg';
+import spotA from '../assets/images/leopard.jpg';
+import spotB from '../assets/images/zanzibar-deck.jpg';
+import noura from '../assets/images/noura.jpg';
+import testimonialImg from '../assets/images/testimonial-dance.jpg';
+import rangers from '../assets/images/rangers.jpg';
+import ctaImg from '../assets/images/cta-campfire.jpg';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const c = home[locale];
+const t = useTranslations(locale);
+const href = (p: string) => localePath(locale, p);
+const tileImages = [tileMigration, tileFamily, tileHoneymoon, tileTailor];
+const posts = (await getPosts(locale)).slice(0, 3);
+const spotlight = getItinerary(locale, 'classic-tanzania');
+const placeOf = (i: number) => {
+  // Map each day to the base it is spent at, following the route strip.
+  const ranges = [1, 2, 4, 7, 8, 12];
+  const idx = ranges.findIndex((end) => i + 1 <= end);
+  return spotlight.route.stops[idx]?.place ?? '';
+};
+const firstSentence = (s: string) => s.split(/(?<=[.؟!])\s/)[0];
+const credentialIcons = ['shield', 'tag', 'clock'] as const;
+const waText = locale === 'ar' ? 'مرحبًا سَمُر، أريد التخطيط لرحلة سفاري' : "Hello Samur, I'd like to plan a safari";
+---
+
+<BaseLayout locale={locale} path="/" image={heroImg}>
+  <!-- Hero -->
+  <section class="hero">
+    <Image src={heroImg} alt="" class="hero-img" widths={[800, 1440, 2000]} sizes="100vw" loading="eager" fetchpriority="high" />
+    <div class="hero-scrim"></div>
+    <div class="container hero-body">
+      <h1 class="h1">{c.hero.title[0]}<br />{c.hero.title[1]}</h1>
+      <p class="intro">{c.hero.body}</p>
+      <a class="btn btn-gold btn-lg hero-cta" href={href('/plan-your-trip')}>
+        {c.hero.cta}
+        <Icon name="arrow" />
+      </a>
+    </div>
+  </section>
+
+  <!-- Journey picker -->
+  <section class="container picker">
+    <div class="picker-head">
+      <h2 class="h2">{c.picker.heading}</h2>
+      <div class="picker-aside">
+        <p class="muted">{c.picker.body}</p>
+        <a class="link-fire" href={whatsappLink(waText)}>
+          {c.picker.link}
+          <Icon name="arrow" size={14} />
+        </a>
+      </div>
+    </div>
+    <ul class="tiles">
+      {c.picker.tiles.map((tile, i) => (
+        <li class:list={['tile', i === 0 && 'tile-wide']}>
+          <a href={href(tile.href)}>
+            <Image src={tileImages[i]} alt="" widths={[400, 700]} sizes="(max-width: 900px) 100vw, 30vw" />
+            <span class="tile-text">
+              <span class="tile-title">{tile.title}</span>
+              <span class="tile-meta">{tile.meta}</span>
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <!-- Itineraries -->
+  <section class="section itins" id="itineraries">
+    <div class="container">
+      <h2 class="h2">{c.itineraries.heading}</h2>
+      <p class="muted lead">{c.itineraries.body}</p>
+      <div class="cards">
+        {itineraries[locale].map((it) => <ItineraryCard locale={locale} itinerary={it} />)}
+      </div>
+    </div>
+  </section>
+
+  <!-- Itinerary spotlight: The Classic Tanzania -->
+  <section class="section spotlight">
+    <div class="container">
+      <div class="spot-head">
+        <div>
+          <h2 class="h2">{spotlight.name}</h2>
+          <p class="muted lead">{c.spotlight.sub}</p>
+        </div>
+        <div class="spot-price">
+          <p class="stat">{t('common.priceOnRequest')}</p>
+          <p class="meta muted">{c.spotlight.priceNote}</p>
+        </div>
+      </div>
+      <div class="spot-grid">
+        <div class="spot-media">
+          <div class="photo spot-main"><Image src={spotMain} alt="" widths={[540, 1080]} sizes="(max-width: 900px) 100vw, 540px" /></div>
+          <div class="spot-pair">
+            <div class="photo"><Image src={spotA} alt="" width={540} /></div>
+            <div class="photo"><Image src={spotB} alt="" width={540} /></div>
+          </div>
+          <div class="covers">
+            <p class="eyebrow">{c.spotlight.coversTitle}</p>
+            <ul>
+              {spotlight.included.slice(0, 3).map((item) => (
+                <li><Icon name="check" size={16} stroke={2.6} />{item}</li>
+              ))}
+              <li class="no"><Icon name="x" size={14} />{spotlight.excluded[0]}</li>
+            </ul>
+          </div>
+          <div class="spot-actions">
+            <a class="btn btn-fire" href={href('/plan-your-trip')}>{c.spotlight.quote}<Icon name="arrow" size={14} /></a>
+            <a class="btn btn-outline" href={href('/itineraries/classic-tanzania')}>{c.spotlight.change}</a>
+          </div>
+        </div>
+        <div>
+          <ol class="spot-days">
+            {spotlight.days.map((d, i) => (
+              <li>
+                <span class="spot-day eyebrow">{t('common.day')} {i + 1}</span>
+                <span class="spot-copy">
+                  <span class="spot-title">{d.title}</span>
+                  <span class="spot-body">{firstSentence(d.body)}</span>
+                </span>
+                <span class="spot-place">{placeOf(i)}</span>
+              </li>
+            ))}
+          </ol>
+          <div class="planner">
+            <Image src={noura} alt="" width={112} class="avatar" />
+            <div>
+              <p class="planner-quote">{c.spotlight.plannerQuote}</p>
+              <p class="meta muted">{c.spotlight.plannerName}</p>
+            </div>
+            <a class="btn btn-outline ask" href={whatsappLink(waText)}><Icon name="chat" size={16} />{c.spotlight.ask}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonial -->
+  <section class="testimonial" id="reviews">
+    <div class="photo t-photo"><Image src={testimonialImg} alt="" widths={[600, 1000]} sizes="(max-width: 900px) 100vw, 42vw" /></div>
+    <figure class="t-body">
+      <blockquote>“{c.testimonial.quote}”</blockquote>
+      <figcaption>
+        <span class="t-name">{c.testimonial.name}</span>
+        <span class="meta muted">{c.testimonial.meta}</span>
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- How we work -->
+  <section class="section how" id="how">
+    <div class="container">
+      <div class="how-head">
+        <h2 class="h2">{c.how.heading}</h2>
+        <dl class="stats">
+          {c.how.stats.map(([v, l]) => (
+            <div><dt class="stat">{v}</dt><dd class="eyebrow muted">{l}</dd></div>
+          ))}
+        </dl>
+      </div>
+      <ol class="steps">
+        {c.how.steps.map(([title, body], i) => (
+          <li class:list={[i === c.how.steps.length - 1 && 'last']}>
+            <span class="stat step-num">{String(i + 1).padStart(2, '0')}</span>
+            <span class="step-title">{title}</span>
+            <span class="muted step-body">{body}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <!-- Conservation -->
+  <section class="conservation">
+    <Image src={rangers} alt="" class="cons-img" widths={[800, 1400]} sizes="(max-width: 900px) 100vw, 75vw" />
+    <div class="cons-scrim"></div>
+    <div class="container cons-body">
+      <h2 class="h2">{c.conservation.heading}</h2>
+      <p class="intro">{c.conservation.body}</p>
+      <div class="cons-actions">
+        <a class="btn btn-ivory" href={href('/plan-your-trip')}>{c.conservation.cta}<Icon name="arrow" size={14} /></a>
+        <span class="meta">{c.conservation.link}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Journal -->
+  <section class="section journal" id="journal">
+    <div class="container">
+      <div class="journal-head">
+        <h2 class="h2">{c.journal.heading}</h2>
+        <a class="link-fire" href={href('/journal')}>{journalUi[locale].allPosts}<Icon name="arrow" size={14} /></a>
+      </div>
+      <ul class="posts">
+        {posts.map((post) => <PostCard post={post} locale={locale} />)}
+      </ul>
+    </div>
+  </section>
+
+  <!-- Credentials -->
+  <section class="credentials">
+    <ul class="container creds">
+      {c.credentials.map(([title, sub], i) => (
+        <li>
+          <Icon name={credentialIcons[i]} size={22} stroke={2} />
+          <span><span class="cred-title">{title}</span><span class="cred-sub muted">{sub}</span></span>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <!-- CTA band -->
+  <section class="cta-band">
+    <Image src={ctaImg} alt="" class="cta-img" widths={[800, 1440, 2000]} sizes="100vw" />
+    <div class="cta-scrim"></div>
+    <div class="container cta-inner">
+      <h2 class="h2">{c.cta.heading}</h2>
+      <p class="intro">{c.cta.body}</p>
+      <div class="cta-actions">
+        <a class="btn btn-ivory btn-lg" href={href('/plan-your-trip')}>{c.cta.primary}<Icon name="arrow" /></a>
+        <a class="btn btn-ghost-light btn-lg" href={whatsappLink(waText)}><Icon name="whatsapp" size={18} />{t('common.whatsappPlanner')}</a>
+      </div>
+      <p class="meta">{c.cta.note}</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .small {
+    font-size: 15px;
+    line-height: 24px;
+  }
+  .lead {
+    max-width: 820px;
+    margin-top: 16px;
+    font-size: 17px;
+    line-height: 29px;
+  }
+
+  /* Hero */
+  .hero {
+    position: relative;
+    min-height: min(800px, 92svh);
+    display: flex;
+    align-items: flex-end;
+    background: var(--forest);
+    color: var(--ivory);
+    overflow: hidden;
+  }
+  .hero-img,
+  .hero-scrim {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .hero-img {
+    object-fit: cover;
+    object-position: center 42%;
+  }
+  .hero-scrim {
+    background: linear-gradient(180deg, #1e4d369e 0%, #1e4d362e 34%, #1e4d36b8 78%, #1e4d36f0 100%);
+  }
+  .hero-body {
+    position: relative;
+    display: grid;
+    gap: 20px;
+    padding-top: 160px;
+    padding-bottom: clamp(48px, 6vw, 76px);
+  }
+  .hero-body .h1 {
+    max-width: 960px;
+  }
+  .hero-body .intro {
+    max-width: 900px;
+  }
+  .hero-cta {
+    justify-self: start;
+    margin-top: 18px;
+    box-shadow: 0 14px 34px #1e4d3666;
+  }
+
+  /* Picker */
+  .picker {
+    padding-top: var(--section-y);
+    padding-bottom: 24px;
+  }
+  .picker-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px 64px;
+    margin-bottom: 44px;
+  }
+  .picker-head .h2 {
+    max-width: 720px;
+  }
+  .picker-aside {
+    display: grid;
+    gap: 14px;
+    max-width: 500px;
+    font-size: 18px;
+    line-height: 28px;
+  }
+  .tiles {
+    display: flex;
+    gap: 16px;
+    height: 460px;
+  }
+  .tile {
+    flex: 1 1 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+    position: relative;
+  }
+  .tile-wide {
+    flex-grow: 1.5;
+  }
+  .tile a {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    padding: 28px;
+    color: var(--ivory);
+    text-decoration: none;
+  }
+  .tile img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 400ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .tile a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, #1e4d3600 40%, #1e4d36d9 100%);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .tile a:hover img {
+      transform: scale(1.03);
+    }
+  }
+  .tile-text {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 6px;
+  }
+  .tile-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1.15;
+  }
+  .tile-wide .tile-title {
+    font-size: 34px;
+  }
+  .tile-meta {
+    font-family: var(--font-display);
+    font-size: 15px;
+    line-height: 20px;
+  }
+
+  /* Itineraries */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 26px;
+    margin-top: 36px;
+  }
+
+  /* Spotlight */
+  .spotlight {
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .spot-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px 64px;
+  }
+  .spot-head .lead {
+    max-width: 620px;
+  }
+  .spot-price {
+    display: grid;
+    gap: 6px;
+    text-align: end;
+  }
+  .spot-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 540px) minmax(0, 1fr);
+    gap: 56px;
+    margin-top: 52px;
+  }
+  .spot-media {
+    display: grid;
+    gap: 14px;
+    align-content: start;
+  }
+  .spot-main {
+    aspect-ratio: 540 / 400;
+    border-radius: var(--radius-sm);
+  }
+  .spot-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .spot-pair .photo {
+    aspect-ratio: 263 / 180;
+    border-radius: var(--radius-sm);
+  }
+  .covers {
+    margin-top: 10px;
+    padding: 28px;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    display: grid;
+    gap: 16px;
+  }
+  .covers .eyebrow {
+    font-size: 11px;
+  }
+  .covers ul {
+    display: grid;
+    gap: 11px;
+  }
+  .covers li {
+    display: flex;
+    gap: 11px;
+    align-items: baseline;
+    font-family: var(--font-display);
+    font-size: 15px;
+    line-height: 22px;
+  }
+  .covers li :global(svg) {
+    translate: 0 3px;
+  }
+  .covers li.no {
+    color: var(--forest-82);
+  }
+  .spot-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .spot-actions .btn {
+    min-height: 56px;
+  }
+  .spot-days li {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+    gap: 20px;
+    padding-block: 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .spot-days li:first-child {
+    padding-top: 0;
+  }
+  .spot-day {
+    font-size: 11px;
+    padding-top: 4px;
+  }
+  .spot-copy {
+    display: grid;
+    gap: 4px;
+  }
+  .spot-title {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+  .spot-body {
+    color: var(--forest-82);
+    font-size: 14px;
+    line-height: 23px;
+  }
+  .spot-place {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    padding-top: 5px;
+    text-align: end;
+  }
+  .planner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px;
+    padding-top: 24px;
+  }
+  .planner > div {
+    flex: 1 1 260px;
+  }
+  .avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 999px;
+    object-fit: cover;
+    object-position: 50% 30%;
+  }
+  .planner-quote {
+    font-size: 15px;
+    line-height: 24px;
+  }
+  .ask {
+    min-height: 42px;
+    font-size: 14px;
+  }
+
+  /* Testimonial */
+  .testimonial {
+    display: grid;
+    grid-template-columns: minmax(0, 600px) minmax(0, 1fr);
+    background: var(--ivory);
+  }
+  .t-photo {
+    min-height: 640px;
+  }
+  .t-body {
+    display: grid;
+    gap: 32px;
+    align-content: center;
+    padding: 64px var(--gutter) 64px clamp(32px, 6vw, 96px);
+  }
+  .t-body blockquote {
+    font-family: var(--font-display);
+    font-size: clamp(24px, 2.6vw, 34px);
+    font-weight: 600;
+    line-height: 1.32;
+  }
+  .t-body figcaption {
+    display: grid;
+    gap: 2px;
+  }
+  .t-name {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  /* How we work */
+  .how-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px 80px;
+  }
+  .how-head .h2 {
+    max-width: 640px;
+  }
+  .stats {
+    display: flex;
+    gap: 44px;
+  }
+  .stats div {
+    display: grid;
+    gap: 3px;
+  }
+  .stats dd {
+    font-weight: 600;
+  }
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-top: 52px;
+    border-top: 1px solid var(--line);
+  }
+  .steps li {
+    position: relative;
+    display: grid;
+    gap: 12px;
+    align-content: start;
+    padding-top: 36px;
+    padding-inline-end: 32px;
+  }
+  .steps li::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    inset-inline-start: 0;
+    width: 11px;
+    height: 11px;
+    border-radius: 999px;
+    background: var(--ivory);
+    border: 2px solid var(--forest);
+  }
+  .steps li.last::before {
+    background: var(--fire);
+    border-color: var(--fire);
+    width: 13px;
+    height: 13px;
+    top: -7px;
+  }
+  .step-num {
+    color: var(--forest-45);
+  }
+  .step-title {
+    font-family: var(--font-display);
+    font-size: 21px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .step-body {
+    font-size: 15px;
+    line-height: 24px;
+  }
+
+  /* Conservation */
+  .conservation {
+    position: relative;
+    min-height: 560px;
+    display: flex;
+    align-items: center;
+    background: var(--forest);
+    color: var(--ivory);
+    overflow: hidden;
+  }
+  .cons-img {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    width: 75%;
+    height: 100%;
+    object-fit: cover;
+    /* Portrait source: keep the two rangers' bodies in frame, as on the Paper board. */
+    object-position: 50% 78%;
+  }
+  .cons-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, #1e4d36 0%, #1e4d36 26%, #1e4d36d9 42%, #1e4d3666 66%, #1e4d3600 100%);
+  }
+  [dir='rtl'] .cons-scrim {
+    background: linear-gradient(270deg, #1e4d36 0%, #1e4d36 26%, #1e4d36d9 42%, #1e4d3666 66%, #1e4d3600 100%);
+  }
+  .cons-body {
+    position: relative;
+    display: grid;
+    gap: 26px;
+    padding-block: 80px;
+  }
+  .cons-body > * {
+    max-width: 560px;
+  }
+  .cons-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 24px;
+    max-width: none;
+  }
+
+  /* Journal */
+  .journal-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px 64px;
+  }
+  .posts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 26px;
+    margin-top: 44px;
+  }
+
+  /* Credentials */
+  .credentials {
+    border-top: 1px solid var(--line);
+  }
+  .creds {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 24px 48px;
+    padding-block: 40px;
+  }
+  .creds li {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    min-width: 260px;
+  }
+  .creds li > span {
+    display: grid;
+    gap: 2px;
+  }
+  .cred-title {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .cred-sub {
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  /* CTA band */
+  .cta-band {
+    position: relative;
+    overflow: hidden;
+    background: var(--forest);
+    color: var(--ivory);
+  }
+  .cta-img,
+  .cta-scrim {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .cta-img {
+    object-fit: cover;
+    object-position: 50% 48%;
+  }
+  .cta-scrim {
+    background: linear-gradient(180deg, #1e4d36b8 0%, #1e4d3699 48%, #1e4d36d6 100%);
+  }
+  .cta-inner {
+    position: relative;
+    min-height: 620px;
+    align-content: center;
+    display: grid;
+    justify-items: center;
+    gap: 26px;
+    text-align: center;
+    padding-block: 96px;
+  }
+  .cta-inner .h2 {
+    max-width: 940px;
+  }
+  .cta-inner .intro {
+    max-width: 600px;
+    font-size: 18px;
+  }
+  .cta-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 8px;
+  }
+
+  @media (max-width: 1100px) {
+    .spot-grid {
+      grid-template-columns: 1fr;
+    }
+    .steps {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      row-gap: 40px;
+      border-top: 0;
+    }
+    .steps li {
+      border-top: 1px solid var(--line);
+    }
+  }
+  @media (max-width: 900px) {
+    .tiles {
+      height: auto;
+      flex-direction: column;
+    }
+    .tile {
+      height: 280px;
+      flex: none;
+    }
+    .cards,
+    .posts {
+      grid-template-columns: 1fr;
+    }
+    .testimonial {
+      grid-template-columns: 1fr;
+    }
+    .t-photo {
+      min-height: 320px;
+    }
+    .t-body {
+      padding: 48px var(--gutter);
+    }
+    .cons-img {
+      width: 100%;
+      opacity: 0.45;
+    }
+    .spot-price {
+      text-align: start;
+    }
+  }
+  @media (max-width: 600px) {
+    .steps {
+      grid-template-columns: 1fr;
+    }
+    .stats {
+      gap: 28px;
+    }
+    .spot-days li {
+      grid-template-columns: 48px minmax(0, 1fr);
+    }
+    .spot-place {
+      display: none;
+    }
+    .spot-actions {
+      grid-template-columns: 1fr;
+    }
+    .hero-cta {
+      justify-self: stretch;
+    }
+  }
+</style>

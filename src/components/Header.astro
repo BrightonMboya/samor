@@ -1,0 +1,706 @@
+---
+import { Image } from 'astro:assets';
+import Icon from './Icon.astro';
+import { localePath, useTranslations, type Locale } from '../i18n/ui';
+import imgClassic from '../assets/images/serengeti-lions.jpg';
+import imgSlow from '../assets/images/family-guide.jpg';
+import imgTailor from '../assets/images/guide-travellers.jpg';
+import imgStory from '../assets/images/our-story.jpg';
+
+/*
+ * Site header. Menus follow the "Nav — Our Journeys open (v3)", "Nav — About Us open (v3)"
+ * and "Nav — Mobile menu open (v3)" boards in Paper; the interaction model is the one from
+ * the Polecat site:
+ *
+ *  - Desktop menus open on hover for a real mouse (with a short close delay so the pointer
+ *    can travel into the panel), on click/tap, and from the keyboard. Escape, a click
+ *    outside, or focus leaving the menu closes them. Only one is open at a time.
+ *  - Panels fade and slide both in and out, and the trigger shows the current section.
+ *  - Below 900px the menus collapse behind a toggle into a full-width stacked panel.
+ */
+interface Props {
+  locale: Locale;
+  path: string;
+}
+const { locale, path } = Astro.props;
+const t = useTranslations(locale);
+const other: Locale = locale === 'en' ? 'ar' : 'en';
+const href = (p: string) => localePath(locale, p);
+
+const journeys = [
+  { title: t('nav.classic'), sub: t('nav.classicSub'), path: '/itineraries/classic-tanzania', img: imgClassic },
+  { title: t('nav.slow'), sub: t('nav.slowSub'), path: '/itineraries/slow-safari', img: imgSlow },
+  { title: t('nav.tailor'), sub: t('nav.tailorSub'), path: '/plan-your-trip', img: imgTailor },
+];
+const about = [
+  { icon: 'people', title: t('nav.aboutUs'), sub: t('nav.aboutUsSub'), path: '/about' },
+  { icon: 'info', title: t('nav.travelInfo'), sub: t('nav.travelInfoSub'), path: '/travel-information' },
+  { icon: 'receipt', title: t('nav.cost'), sub: t('nav.costSub'), path: '/cost-breakdown' },
+  { icon: 'sun', title: t('nav.bestTime'), sub: t('nav.bestTimeSub'), path: '/travel-information#seasons' },
+  { icon: 'sparkle', title: t('nav.addons'), sub: t('nav.addonsSub'), path: '/safari-add-ons' },
+] as const;
+
+/** A link is "current" when it points at this page (hash links never are). */
+const isCurrent = (p: string) => !p.includes('#') && p !== '/' && p === path;
+const journeysActive = journeys.some((j) => isCurrent(j.path));
+const aboutActive = about.some((row) => isCurrent(row.path));
+const journalActive = path === '/journal' || path.startsWith('/journal/');
+---
+
+<header class="site-header">
+  <div class="container bar">
+    <a class="wordmark" href={href('/')} aria-label={locale === 'ar' ? 'سَمُر — الصفحة الرئيسية' : 'Samur — home'}>SAMUR</a>
+
+    <nav class="nav" aria-label={t('nav.menuLabel')}>
+      <div class="menu" data-menu>
+        <button
+          type="button"
+          class="nav-link"
+          aria-expanded="false"
+          aria-controls="menu-journeys"
+          data-active={journeysActive ? '' : undefined}
+          data-menu-trigger
+        >
+          {t('nav.journeys')}
+          <Icon name="chevron" size={11} stroke={3} class="chev" />
+        </button>
+        <div id="menu-journeys" class="panel-wrap center" data-menu-panel>
+          <ul class="panel journeys">
+            {journeys.map((j) => (
+              <li>
+                <a class="journey" href={href(j.path)} aria-current={isCurrent(j.path) ? 'page' : undefined}>
+                  <span class="journey-img">
+                    <Image src={j.img} alt="" width={420} />
+                  </span>
+                  <span class="journey-text">
+                    <span class="journey-title">{j.title}</span>
+                    <span class="journey-sub">{j.sub}</span>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div class="menu" data-menu>
+        <button
+          type="button"
+          class="nav-link"
+          aria-expanded="false"
+          aria-controls="menu-about"
+          data-active={aboutActive ? '' : undefined}
+          data-menu-trigger
+        >
+          {t('nav.about')}
+          <Icon name="chevron" size={11} stroke={3} class="chev" />
+        </button>
+        <div id="menu-about" class="panel-wrap end" data-menu-panel>
+          <div class="panel about">
+            <a class="story" href={href('/about')}>
+              <Image src={imgStory} alt="" width={448} class="story-img" />
+              <span class="story-text">
+                <span class="story-title">{t('nav.storyTitle')}</span>
+                <span class="story-sub">{t('nav.storySub')}</span>
+              </span>
+            </a>
+            <ul class="rows">
+              {about.map((row) => (
+                <li>
+                  <a class="row" href={href(row.path)} aria-current={isCurrent(row.path) ? 'page' : undefined}>
+                    <span class="row-icon"><Icon name={row.icon} size={18} stroke={1.6} /></span>
+                    <span class="row-text">
+                      <span class="row-title">{row.title}</span>
+                      <span class="row-sub">{row.sub}</span>
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <a class="nav-link" href={href('/journal')} aria-current={path === '/journal' ? 'page' : undefined} data-active={journalActive ? '' : undefined}>{t('nav.journal')}</a>
+    </nav>
+
+    <div class="actions">
+      <a class="lang" href={localePath(other, path)} hreflang={other} lang={other} aria-label={t('nav.switchLabel')}>
+        <Icon name="globe" size={16} stroke={1.6} />
+        <span>{t('nav.switch')}</span>
+      </a>
+      <a class="btn btn-fire plan" href={href('/plan-your-trip')} aria-current={isCurrent('/plan-your-trip') ? 'page' : undefined}>
+        {t('nav.plan')}
+      </a>
+      <button
+        type="button"
+        class="toggle"
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+        aria-label={t('nav.menu')}
+        data-mobile-toggle
+      >
+        <span class="toggle-open"><Icon name="menu" size={22} stroke={1.8} /></span>
+        <span class="toggle-close"><Icon name="x" size={20} stroke={1.8} /></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile: the same menus, stacked. -->
+  <nav id="mobile-menu" class="mobile" aria-label={t('nav.menuLabel')} data-mobile-menu hidden>
+    <div class="container mobile-inner">
+      <p class="m-label">{t('nav.journeys')}</p>
+      <ul class="m-journeys">
+        {journeys.map((j) => (
+          <li>
+            <a href={href(j.path)} aria-current={isCurrent(j.path) ? 'page' : undefined}>
+              <span class="m-img"><Image src={j.img} alt="" width={240} /></span>
+              <span class="m-title">{j.title}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p class="m-label">{t('nav.about')}</p>
+      <ul class="m-rows">
+        {about.map((row) => (
+          <li><a href={href(row.path)} aria-current={isCurrent(row.path) ? 'page' : undefined}>{row.title}</a></li>
+        ))}
+      </ul>
+      <a class="m-journal" href={href('/journal')} aria-current={path === '/journal' ? 'page' : undefined}>{t('nav.journal')}</a>
+      <a class="btn btn-fire m-plan" href={href('/plan-your-trip')}>{t('nav.plan')}</a>
+    </div>
+  </nav>
+</header>
+
+<script>
+  const CLOSE_DELAY = 150;
+  const menus = [...document.querySelectorAll<HTMLElement>('[data-menu]')];
+
+  const setOpen = (menu: HTMLElement, open: boolean) => {
+    menu.toggleAttribute('data-open', open);
+    menu.querySelector('[data-menu-trigger]')?.setAttribute('aria-expanded', String(open));
+  };
+
+  for (const menu of menus) {
+    const trigger = menu.querySelector<HTMLButtonElement>('[data-menu-trigger]')!;
+    let timer: number | undefined;
+
+    const open = () => {
+      window.clearTimeout(timer);
+      for (const other of menus) if (other !== menu) setOpen(other, false);
+      setOpen(menu, true);
+    };
+    const close = () => setOpen(menu, false);
+
+    // Hover only for a real mouse; touch taps go through click.
+    menu.addEventListener('pointerenter', (e) => {
+      if (e.pointerType === 'mouse') open();
+    });
+    menu.addEventListener('pointerleave', (e) => {
+      if (e.pointerType === 'mouse') timer = window.setTimeout(close, CLOSE_DELAY);
+    });
+    trigger.addEventListener('click', () => (menu.hasAttribute('data-open') ? close() : open()));
+    menu.addEventListener('focusout', (e) => {
+      if (!menu.contains(e.relatedTarget as Node | null)) close();
+    });
+    menu.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && menu.hasAttribute('data-open')) {
+        close();
+        trigger.focus();
+      }
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    for (const m of menus) if (m.hasAttribute('data-open') && !m.contains(e.target as Node)) setOpen(m, false);
+  });
+
+  // Mobile menu
+  const toggle = document.querySelector<HTMLButtonElement>('[data-mobile-toggle]');
+  const panel = document.querySelector<HTMLElement>('[data-mobile-menu]');
+  const setMobile = (open: boolean) => {
+    if (!toggle || !panel) return;
+    toggle.setAttribute('aria-expanded', String(open));
+    panel.hidden = !open;
+  };
+  toggle?.addEventListener('click', () => setMobile(toggle.getAttribute('aria-expanded') !== 'true'));
+  panel?.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('a')) setMobile(false);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') {
+      setMobile(false);
+      toggle.focus();
+    }
+  });
+  matchMedia('(min-width: 901px)').addEventListener('change', (e) => {
+    if (e.matches) setMobile(false);
+  });
+</script>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--ivory);
+    border-bottom: 1px solid var(--line);
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 88px;
+  }
+  .wordmark {
+    font-family: var(--font-poppins), 'Poppins', sans-serif;
+    font-size: 27px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    line-height: 34px;
+    color: var(--forest);
+    text-decoration: none;
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-inline-start: auto;
+    margin-inline-end: 12px;
+  }
+  .menu {
+    position: relative;
+  }
+  .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    line-height: 16px;
+    text-transform: uppercase;
+    text-decoration: none;
+    white-space: nowrap;
+    color: var(--forest);
+    cursor: pointer;
+    transition: background-color 160ms ease-out, color 160ms ease-out;
+  }
+  :global(:root[lang='ar']) .nav-link {
+    font-size: 14px;
+    letter-spacing: 0;
+  }
+  .nav-link[aria-expanded='true'] {
+    background: #1e4d360f;
+    color: var(--fire);
+  }
+  .nav-link[data-active] {
+    color: var(--fire);
+  }
+  .nav-link :global(.chev) {
+    transition: transform 200ms ease-out;
+  }
+  .menu[data-open] .nav-link :global(.chev) {
+    transform: rotate(180deg);
+  }
+
+  /* Panels. The wrapper's top padding bridges the gap to the trigger so the pointer can
+     travel into the panel without leaving the menu. */
+  .panel-wrap {
+    position: absolute;
+    top: 100%;
+    z-index: 50;
+    padding-top: 24px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    translate: 0 4px;
+    transition: opacity 200ms ease-out, translate 200ms ease-out, visibility 200ms;
+  }
+  .panel-wrap.center {
+    left: 50%;
+    translate: -50% 4px;
+  }
+  .panel-wrap.end {
+    inset-inline-end: 0;
+  }
+  .menu[data-open] .panel-wrap {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    translate: 0 0;
+  }
+  .menu[data-open] .panel-wrap.center {
+    translate: -50% 0;
+  }
+  .panel {
+    display: flex;
+    gap: 4px;
+    padding: 8px;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 12px 40px -12px #1e4d3659;
+  }
+
+  .journeys {
+    width: 704px;
+  }
+  .journeys > li {
+    flex: 1 1 0;
+    display: flex;
+  }
+  .journey {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 8px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background-color 160ms ease-out;
+  }
+  .journey-img {
+    position: relative;
+    display: block;
+    height: 148px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--forest);
+  }
+  .journey-img :global(img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 40%;
+    transition: transform 500ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .journey-text {
+    display: grid;
+    gap: 4px;
+    padding: 0 4px 4px;
+  }
+  .journey-title {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+  .row[aria-current='page'] .row-title,
+  .journey[aria-current='page'] .journey-title {
+    color: var(--fire);
+  }
+  .journey-sub,
+  .row-sub,
+  .story-sub {
+    font-family: var(--font-display);
+    font-size: 13px;
+    line-height: 20px;
+  }
+  .journey-sub,
+  .row-sub {
+    color: var(--forest-82);
+  }
+
+  .about {
+    width: 640px;
+  }
+  .story {
+    position: relative;
+    flex: 0 0 224px;
+    display: flex;
+    align-items: flex-end;
+    min-height: 338px;
+    padding: 16px;
+    border-radius: 8px;
+    overflow: hidden;
+    color: var(--ivory);
+    text-decoration: none;
+  }
+  .story :global(.story-img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 40% 50%;
+    transition: transform 500ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .story::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, #1e4d36eb 0%, #1e4d3666 50%, #1e4d3600 100%);
+  }
+  .story-text {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 4px;
+  }
+  .story-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 28px;
+  }
+  .rows {
+    flex: 1 1 0;
+    display: grid;
+    gap: 2px;
+  }
+  .row {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background-color 160ms ease-out;
+  }
+  .row-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--white);
+    transition: border-color 160ms ease-out;
+  }
+  .row-text {
+    display: grid;
+    gap: 2px;
+  }
+  .row-title {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .nav-link:hover {
+      background: #1e4d360a;
+      color: var(--fire);
+    }
+    .journey:hover,
+    .row:hover {
+      background: var(--ivory);
+    }
+    .journey:hover .journey-img :global(img),
+    .story:hover :global(.story-img) {
+      transform: scale(1.05);
+    }
+    .row:hover .row-title {
+      color: var(--fire);
+    }
+    .row:hover .row-icon {
+      border-color: #c1260e4d;
+    }
+    .lang:hover {
+      background: #1e4d360a;
+    }
+  }
+  .journey:focus-visible,
+  .row:focus-visible {
+    background: var(--ivory);
+  }
+
+  /* Actions */
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .lang {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-plex-arabic), var(--font-poppins), sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 20px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color 160ms ease-out;
+  }
+  .lang:lang(en) {
+    font-family: var(--font-poppins), 'Poppins', sans-serif;
+    font-size: 14px;
+  }
+  .plan {
+    min-height: 40px;
+    padding-inline: 22px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  :global(:root[lang='ar']) .plan {
+    font-size: 14px;
+    letter-spacing: 0;
+  }
+
+  /* Mobile */
+  .toggle {
+    display: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: var(--radius);
+    background: none;
+    color: var(--forest);
+    cursor: pointer;
+  }
+  .toggle[aria-expanded='true'] {
+    background: #1e4d360f;
+  }
+  .toggle-close,
+  .toggle[aria-expanded='true'] .toggle-open {
+    display: none;
+  }
+  .toggle[aria-expanded='true'] .toggle-close {
+    display: grid;
+  }
+  .toggle-open {
+    display: grid;
+  }
+
+  .mobile {
+    border-top: 1px solid var(--line);
+    background: var(--ivory);
+    max-height: calc(100svh - 68px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .mobile-inner {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 32px;
+  }
+  .m-label {
+    padding: 20px 0 12px;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    line-height: 16px;
+    text-transform: uppercase;
+    color: var(--forest-82);
+  }
+  :global(:root[lang='ar']) .m-label {
+    font-size: 13px;
+    letter-spacing: 0;
+  }
+  .m-journeys {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .m-journeys a {
+    display: grid;
+    gap: 8px;
+    text-decoration: none;
+  }
+  .m-img {
+    position: relative;
+    display: block;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--forest);
+  }
+  .m-img :global(img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .m-title {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 18px;
+  }
+  .m-rows a[aria-current='page'],
+  .m-journeys a[aria-current='page'] .m-title {
+    color: var(--fire);
+  }
+  .m-rows a {
+    display: block;
+    padding-block: 12px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-display);
+    font-size: 15px;
+    line-height: 24px;
+    text-decoration: none;
+  }
+  .m-journal {
+    padding: 20px 0 4px;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    line-height: 16px;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+  :global(:root[lang='ar']) .m-journal {
+    font-size: 14px;
+    letter-spacing: 0;
+  }
+  .m-plan {
+    margin-top: 24px;
+    min-height: 48px;
+  }
+
+  @media (max-width: 1100px) {
+    .journeys {
+      width: 620px;
+    }
+  }
+  @media (min-width: 901px) {
+    .mobile {
+      display: none;
+    }
+  }
+  @media (max-width: 900px) {
+    .nav,
+    .plan {
+      display: none;
+    }
+    .toggle {
+      display: grid;
+    }
+    .actions {
+      gap: 4px;
+      margin-inline-start: auto;
+    }
+    .bar {
+      height: 68px;
+    }
+    .wordmark {
+      font-size: 22px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .panel-wrap,
+    .journey-img :global(img),
+    .story :global(.story-img) {
+      transition: none;
+    }
+  }
+</style>

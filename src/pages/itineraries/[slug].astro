@@ -1,0 +1,11 @@
+---
+import ItineraryView from '../../views/ItineraryView.astro';
+import { itineraries, type ItinerarySlug } from '../../data/itineraries';
+
+export function getStaticPaths() {
+  return itineraries.ar.map((it) => ({ params: { slug: it.slug } }));
+}
+const slug = Astro.params.slug as ItinerarySlug;
+---
+
+<ItineraryView locale="ar" slug={slug} />

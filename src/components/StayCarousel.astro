@@ -1,0 +1,183 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import Icon from './Icon.astro';
+import type { Locale } from '../i18n/ui';
+
+/*
+ * Photo carousel for a lodge. Native horizontal scroll with snap points, so swiping
+ * works on touch without any script; the arrow buttons and the counter are a small
+ * progressive enhancement and work in both LTR and RTL.
+ */
+interface Props {
+  photos: ImageMetadata[];
+  name: string;
+  locale: Locale;
+}
+const { photos, name, locale } = Astro.props;
+const ar = locale === 'ar';
+const labels = {
+  region: ar ? `صور ${name}` : `Photos of ${name}`,
+  prev: ar ? 'الصورة السابقة' : 'Previous photo',
+  next: ar ? 'الصورة التالية' : 'Next photo',
+  photo: (i: number) => (ar ? `${name}، الصورة ${i} من ${photos.length}` : `${name}, photo ${i} of ${photos.length}`),
+};
+---
+
+<div class="carousel" role="region" aria-roledescription="carousel" aria-label={labels.region} data-carousel>
+  <ul class="track" data-track tabindex="0">
+    {photos.map((src, i) => (
+      <li class="slide">
+        <Image
+          src={src}
+          alt={labels.photo(i + 1)}
+          widths={[440, 880]}
+          sizes="(max-width: 600px) 82vw, 440px"
+          loading="lazy"
+        />
+      </li>
+    ))}
+  </ul>
+  {photos.length > 1 && (
+    <>
+      <button type="button" class="nav prev" aria-label={labels.prev} data-dir="-1" disabled>
+        <Icon name="back" size={16} stroke={2.2} />
+      </button>
+      <button type="button" class="nav next" aria-label={labels.next} data-dir="1">
+        <Icon name="arrow" size={16} stroke={2.2} />
+      </button>
+      <p class="count" aria-hidden="true"><span data-index>1</span> / {photos.length}</p>
+    </>
+  )}
+</div>
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>('[data-carousel]')) {
+    const track = root.querySelector<HTMLElement>('[data-track]')!;
+    const prev = root.querySelector<HTMLButtonElement>('.prev');
+    const next = root.querySelector<HTMLButtonElement>('.next');
+    const index = root.querySelector<HTMLElement>('[data-index]');
+    // In RTL, scrollLeft runs from 0 to negative; "next" moves toward the inline end either way.
+    const sign = () => (getComputedStyle(track).direction === 'rtl' ? -1 : 1);
+    const step = () => {
+      const first = track.children[0] as HTMLElement;
+      return first.offsetWidth + parseFloat(getComputedStyle(track).columnGap || '0');
+    };
+    const maxScroll = () => track.scrollWidth - track.clientWidth;
+    const current = () => Math.round(Math.abs(track.scrollLeft) / step());
+
+    const update = () => {
+      const i = current();
+      if (index) index.textContent = String(i + 1);
+      if (prev) prev.disabled = i <= 0;
+      if (next) next.disabled = Math.abs(track.scrollLeft) >= maxScroll() - 2;
+    };
+    for (const btn of [prev, next]) {
+      btn?.addEventListener('click', () => {
+        const dir = Number(btn.dataset.dir);
+        track.scrollTo({ left: (current() + dir) * step() * sign(), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      });
+    }
+    track.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      const forward = (e.key === 'ArrowRight') === (sign() === 1);
+      (forward ? next : prev)?.click();
+    });
+    track.addEventListener('scroll', () => requestAnimationFrame(update), { passive: true });
+    update();
+  }
+</script>
+
+<style>
+  .carousel {
+    position: relative;
+    padding: 8px 8px 0;
+  }
+  /* Two photos in view with the next one peeking, so it reads as a gallery at a glance. */
+  .track {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .track::-webkit-scrollbar {
+    display: none;
+  }
+  .track:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: -4px;
+  }
+  .slide {
+    flex: 0 0 46%;
+    height: clamp(220px, 24vw, 320px);
+    scroll-snap-align: start;
+  }
+  .slide :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  @media (max-width: 600px) {
+    .slide {
+      flex-basis: 82%;
+      height: 240px;
+    }
+  }
+  .nav {
+    position: absolute;
+    top: 50%;
+    translate: 0 -50%;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    background: #f7f3ecf2;
+    color: var(--forest);
+    box-shadow: 0 4px 14px -4px #0e211966;
+    cursor: pointer;
+    transition: opacity 160ms ease-out, scale 120ms ease-out;
+  }
+  .nav:active {
+    scale: 0.94;
+  }
+  .nav:disabled {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .prev {
+    inset-inline-start: 12px;
+  }
+  .next {
+    inset-inline-end: 12px;
+  }
+  .count {
+    position: absolute;
+    inset-block-end: 12px;
+    inset-inline-end: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #0e2119a6;
+    color: var(--ivory);
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    font-variant-numeric: tabular-nums;
+    direction: ltr;
+  }
+  @media (hover: none) {
+    .nav {
+      display: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .track {
+      scroll-behavior: auto;
+    }
+  }
+</style>

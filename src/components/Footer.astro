@@ -1,0 +1,173 @@
+---
+import { contact, localePath, useTranslations, type Locale } from '../i18n/ui';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+const cols = [
+  {
+    title: t('footer.before'),
+    links: [
+      ['footer.when', '/travel-information#seasons'],
+      ['footer.cost', '/cost-breakdown'],
+      ['footer.visas', '/travel-information#visas'],
+      ['footer.pack', '/travel-information#what-to-pack'],
+      ['footer.kids', '/travel-information#kids'],
+    ],
+  },
+  {
+    title: t('footer.company'),
+    links: [
+      ['footer.story', '/about#story'],
+      ['footer.conservation', '/about#conservation'],
+      ['footer.journal', '/journal'],
+      ['footer.reviews', '/#reviews'],
+    ],
+  },
+] as const;
+const legal = [
+  ['footer.privacy', '/privacy'],
+  ['footer.terms', '/terms'],
+  ['footer.protection', '/financial-protection'],
+] as const;
+---
+
+<footer class="footer">
+  <div class="container main">
+    <div class="brand">
+      <p class="wordmark">SAMUR</p>
+      <p class="blurb">{t('footer.blurb')}</p>
+      <a class="contact" href={`mailto:${contact.email}`}>{contact.email}</a>
+      <a class="contact" href={`tel:${contact.phoneDisplay.replace(/\s/g, '')}`} dir="ltr">{contact.phoneDisplay}</a>
+    </div>
+    <div class="cols">
+      {cols.map((col) => (
+        <div class="col">
+          <p class="label">{col.title}</p>
+          <ul>
+            {col.links.map(([key, p]) => (
+              <li>
+                <a href={localePath(locale, p)}>{t(key)}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  </div>
+  <div class="bar">
+    <div class="container bar-inner">
+      <p>{t('footer.copyright')}</p>
+      <ul class="legal">
+        {legal.map(([key, p]) => (
+          <li><a href={localePath(locale, p)}>{t(key)}</a></li>
+        ))}
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<style>
+  /* White, not forest: the CTA band above is already forest, so the page ends on a light ground. */
+  .footer {
+    background: var(--white);
+    color: var(--forest);
+    border-top: 1px solid var(--line);
+    font-family: var(--font-display);
+  }
+  .main {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    padding-top: 76px;
+    padding-bottom: 64px;
+  }
+  .brand {
+    flex: 1 1 320px;
+    display: grid;
+    gap: 20px;
+    align-content: start;
+    max-width: 380px;
+  }
+  .wordmark {
+    font-size: 30px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 32px;
+    font-family: var(--font-poppins), 'Poppins', sans-serif;
+  }
+  .blurb {
+    font-size: 15px;
+    line-height: 26px;
+  }
+  .contact {
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    justify-self: start;
+  }
+  /* Link columns sit against the end edge, as in Paper, so there is no dead space after them. */
+  .cols {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    margin-inline-start: auto;
+  }
+  .col {
+    width: 196px;
+  }
+  .blurb,
+  .bar-inner > p {
+    color: var(--forest-82);
+  }
+  .label {
+    color: color-mix(in srgb, var(--forest) 75%, transparent);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    line-height: 14px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  :global(:root[lang='ar']) .label {
+    font-size: 13px;
+    letter-spacing: 0;
+  }
+  .col ul {
+    display: grid;
+    gap: 14px;
+  }
+  .col a,
+  .legal a {
+    font-size: 15px;
+    line-height: 18px;
+    text-decoration: none;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .footer a:hover {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+  }
+  .bar {
+    border-top: 1px solid var(--line);
+  }
+  .bar-inner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px 26px;
+    padding-block: 22px;
+    font-size: 13px;
+  }
+  .legal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 26px;
+  }
+  .legal a {
+    font-size: 13px;
+  }
+</style>

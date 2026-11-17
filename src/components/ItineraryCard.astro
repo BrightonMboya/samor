@@ -1,0 +1,101 @@
+---
+import { Image } from 'astro:assets';
+import Icon from './Icon.astro';
+import type { Itinerary } from '../data/itineraries';
+import { localePath, useTranslations, type Locale } from '../i18n/ui';
+
+interface Props {
+  locale: Locale;
+  itinerary: Itinerary;
+}
+const { locale, itinerary: it } = Astro.props;
+const t = useTranslations(locale);
+const url = localePath(locale, `/itineraries/${it.slug}`);
+---
+
+<article class="card">
+  <a class="photo card-photo" href={url} tabindex="-1" aria-hidden="true">
+    <Image src={it.cardImage} alt="" widths={[640, 1000]} sizes="(max-width: 900px) 100vw, 640px" />
+  </a>
+  <div class="card-body">
+    <p class="eyebrow">{it.card.eyebrow}</p>
+    <h3 class="card-title"><a href={url}>{it.name}</a></h3>
+    <p class="facts meta">
+      <span><Icon name="calendar" size={15} stroke={2} />12 {t('common.days')}</span>
+      <span class="sep" aria-hidden="true"></span>
+      <span><Icon name="people" size={15} stroke={2} />{it.card.meta}</span>
+    </p>
+    <p class="muted desc">{it.card.description}</p>
+  </div>
+  <div class="card-foot">
+    <a class="btn btn-forest view" href={url}>{t('common.viewDays')}<Icon name="arrow" size={14} /></a>
+  </div>
+</article>
+
+<style>
+  .card {
+    display: flex;
+    flex-direction: column;
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .card-photo {
+    display: block;
+    height: clamp(240px, 26vw, 360px);
+  }
+  .card-photo :global(img) {
+    transition: transform 400ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .card:hover .card-photo :global(img) {
+      transform: scale(1.03);
+    }
+  }
+  .card-body {
+    display: grid;
+    gap: 12px;
+    padding: 22px 24px;
+  }
+  .card-title a {
+    text-decoration: none;
+  }
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 18px;
+    font-weight: 600;
+  }
+  .facts span:not(.sep) {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .facts :global(svg) {
+    color: var(--forest-82);
+  }
+  .sep {
+    width: 1px;
+    height: 14px;
+    background: var(--line);
+  }
+  .desc {
+    font-size: 15px;
+    line-height: 23px;
+  }
+  .card-foot {
+    margin-top: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 24px;
+    border-top: 1px solid var(--line);
+  }
+  .view {
+    min-height: 42px;
+    font-size: 14px;
+  }
+</style>

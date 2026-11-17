@@ -1,0 +1,101 @@
+---
+import { Image } from 'astro:assets';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostCard from '../components/PostCard.astro';
+import Icon from '../components/Icon.astro';
+import { localePath, type Locale } from '../i18n/ui';
+import { formatDate, getPosts, journalUi, postSlug } from '../data/journal';
+
+/* The journal index: a heading, the newest post as a wide feature, then the rest as cards. */
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const ui = journalUi[locale];
+const [feature, ...rest] = await getPosts(locale);
+---
+
+<BaseLayout locale={locale} path="/journal" title={ui.title} description={ui.lead} image={feature?.data.hero}>
+  <section class="section journal">
+    <div class="container">
+      <header class="head">
+        <h1 class="h1">{ui.heading}</h1>
+        <p class="intro muted">{ui.lead}</p>
+      </header>
+
+      {feature && (
+        <a class="feature" href={localePath(locale, `/journal/${postSlug(feature)}`)}>
+          <div class="photo feature-photo">
+            <Image src={feature.data.hero} alt="" widths={[640, 1000, 1400]} sizes="(max-width: 900px) 100vw, 60vw" loading="eager" fetchpriority="high" />
+          </div>
+          <div class="feature-copy">
+            <p class="eyebrow muted">{feature.data.category} · {ui.read(feature.data.readMinutes)}</p>
+            <h2 class="h2">{feature.data.title}</h2>
+            <p class="muted">{feature.data.description}</p>
+            <p class="meta muted">{formatDate(feature.data.date, locale)}</p>
+            <span class="link-fire">{ui.more}<Icon name="arrow" size={14} /></span>
+          </div>
+        </a>
+      )}
+
+      <ul class="grid">
+        {rest.map((post) => <PostCard post={post} locale={locale} as="h2" />)}
+      </ul>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .head {
+    display: grid;
+    gap: 18px;
+    max-width: 760px;
+  }
+  .h1 {
+    text-wrap: balance;
+  }
+  .feature {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: clamp(24px, 4vw, 56px);
+    align-items: center;
+    margin-top: clamp(40px, 5vw, 64px);
+    padding-bottom: clamp(40px, 5vw, 64px);
+    border-bottom: 1px solid var(--line);
+    text-decoration: none;
+    color: inherit;
+  }
+  .feature-photo {
+    aspect-ratio: 16 / 10;
+    border-radius: var(--radius-sm);
+  }
+  .feature-copy {
+    display: grid;
+    gap: 14px;
+    justify-items: start;
+  }
+  .feature .h2 {
+    text-wrap: balance;
+  }
+  .feature .link-fire {
+    margin-top: 6px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+    gap: 48px 26px;
+    margin-top: clamp(40px, 5vw, 64px);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .feature:hover .h2 {
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 6px;
+    }
+  }
+  @media (max-width: 900px) {
+    .feature {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

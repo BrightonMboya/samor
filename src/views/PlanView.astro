@@ -1,0 +1,599 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import { plan, countryCodes } from '../data/plan';
+import { contact, localePath, type Locale } from '../i18n/ui';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const p = plan[locale];
+const s = p.steps;
+const total = 5;
+const stepIds = ['trip', 'dates', 'guests', 'budget', 'contact'] as const;
+---
+
+<BaseLayout locale={locale} path="/plan-your-trip" title={p.title}>
+  <section class="planner-page">
+    <form
+      class="card"
+      id="plan-form"
+      novalidate
+      data-wa={contact.whatsapp}
+      data-summary={JSON.stringify(p.summary)}
+      data-required={p.required}
+    >
+      <div class="progress" aria-hidden="true">
+        {stepIds.map((_, i) => <span class:list={['bar', i === 0 && 'on']}></span>)}
+      </div>
+
+      <!-- 1. Trip -->
+      <fieldset class="step" data-step="1">
+        <legend>
+          <span class="eyebrow step-of">{p.stepOf(1, total)}</span>
+          <span class="h3">{s.trip.heading}</span>
+          <span class="sub">{s.trip.sub}</span>
+        </legend>
+        <div class="options two">
+          {s.trip.options.map(([value, title, sub], i) => (
+            <label class="option">
+              <input type="radio" name="trip" value={value} checked={i === 0} data-label={title} />
+              <span class="opt-title">{title}</span>
+              <span class="opt-sub">{sub}</span>
+              <span class="tick"><Icon name="check" size={12} stroke={3.2} /></span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <!-- 2. Dates -->
+      <fieldset class="step" data-step="2">
+        <legend>
+          <span class="eyebrow step-of">{p.stepOf(2, total)}</span>
+          <span class="h3">{s.dates.heading}</span>
+          <span class="sub">{s.dates.sub}</span>
+        </legend>
+        <div class="fields two">
+          <label class="field"><span class="flabel">{s.dates.arrival} *</span><input type="date" name="arrival" required /></label>
+          <label class="field"><span class="flabel">{s.dates.days}</span><input type="number" name="days" min="3" max="30" value="12" inputmode="numeric" /></label>
+        </div>
+        <label class="check"><input type="checkbox" name="flexible" /> <span>{s.dates.flexible}</span></label>
+      </fieldset>
+
+      <!-- 3. Guests -->
+      <fieldset class="step" data-step="3">
+        <legend>
+          <span class="eyebrow step-of">{p.stepOf(3, total)}</span>
+          <span class="h3">{s.guests.heading}</span>
+          <span class="sub">{s.guests.sub}</span>
+        </legend>
+        <div class="fields two">
+          <label class="field"><span class="flabel">{s.guests.adults} *</span><input type="number" name="adults" min="1" max="20" value="2" inputmode="numeric" required /></label>
+          <label class="field"><span class="flabel">{s.guests.children}</span><input type="number" name="children" min="0" max="20" value="0" inputmode="numeric" /></label>
+        </div>
+        <label class="field"><span class="flabel">{s.guests.ages}</span><input name="ages" placeholder={s.guests.agesPh} /></label>
+      </fieldset>
+
+      <!-- 4. Budget -->
+      <fieldset class="step" data-step="4">
+        <legend>
+          <span class="eyebrow step-of">{p.stepOf(4, total)}</span>
+          <span class="h3">{s.budget.heading}</span>
+          <span class="sub">{s.budget.sub}</span>
+        </legend>
+        <p class="eyebrow group-label">{s.budget.label} *</p>
+        <div class="options two compact">
+          {s.budget.options.map((o) => (
+            <label class="option center">
+              <input type="radio" name="budget" value={o} required />
+              <span class="opt-title">{o}</span>
+              <span class="tick"><Icon name="check" size={12} stroke={3.2} /></span>
+            </label>
+          ))}
+        </div>
+        <p class="eyebrow group-label">{s.budget.interests}</p>
+        <div class="chips">
+          {s.budget.interestOptions.map((o) => (
+            <label class="chip"><input type="checkbox" name="interests" value={o} /><Icon name="check" size={12} stroke={3.4} /><span>{o}</span></label>
+          ))}
+        </div>
+      </fieldset>
+
+      <!-- 5. Contact -->
+      <fieldset class="step" data-step="5">
+        <legend>
+          <span class="eyebrow step-of">{p.stepOf(5, total)}</span>
+          <span class="h3">{s.contact.heading}</span>
+          <span class="sub">{s.contact.sub}</span>
+        </legend>
+        <label class="field"><span class="flabel">{s.contact.name} *</span><input name="name" autocomplete="name" placeholder={s.contact.namePh} required /></label>
+        <label class="field"><span class="flabel">{s.contact.email} *</span><input type="email" name="email" autocomplete="email" placeholder={s.contact.emailPh} dir="ltr" required /></label>
+        <div class="field">
+          <span class="flabel" id="phone-label">{s.contact.phone} *</span>
+          <div class="phone" dir="ltr">
+            <select name="cc" aria-labelledby="phone-label">
+              {countryCodes.map(([c, code]) => <option value={code}>{c} {code}</option>)}
+            </select>
+            <input type="tel" name="phone" autocomplete="tel-national" placeholder="5X XXX XXXX" aria-labelledby="phone-label" required />
+          </div>
+        </div>
+        <label class="field"><span class="flabel">{s.contact.notes}</span><textarea name="notes" rows="4" placeholder={s.contact.notesPh}></textarea></label>
+      </fieldset>
+
+      <p class="error" role="alert" hidden></p>
+
+      <div class="actions">
+        <button type="button" class="back" data-action="back" disabled><Icon name="back" size={14} />{p.back}</button>
+        <div class="end">
+          <button type="button" class="btn btn-wa" data-action="whatsapp" hidden><Icon name="whatsapp" size={16} />{s.contact.whatsapp}</button>
+          <button type="button" class="btn btn-fire" data-action="next">{p.next}<Icon name="arrow" size={14} /></button>
+          <button type="submit" class="btn btn-fire" data-action="submit" hidden>{s.contact.submit}<Icon name="arrow" size={14} /></button>
+        </div>
+      </div>
+
+      <!-- Shown after submit, in place of the steps. -->
+      <div class="done" hidden>
+        <span class="done-icon" aria-hidden="true"><Icon name="check" size={22} stroke={2.6} /></span>
+        <h2 class="h3" tabindex="-1">{p.done.heading}</h2>
+        <p class="sub">{p.done.body}</p>
+        <div class="done-actions">
+          <a class="btn btn-wa" data-done-wa href={`https://wa.me/${contact.whatsapp}`} target="_blank" rel="noopener"><Icon name="whatsapp" size={16} />{p.done.whatsapp}</a>
+          <a class="back" href={localePath(locale, '/')}>{p.done.home}</a>
+        </div>
+      </div>
+    </form>
+  </section>
+</BaseLayout>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('#plan-form');
+  if (form) {
+    const steps = [...form.querySelectorAll<HTMLFieldSetElement>('.step')];
+    const bars = [...form.querySelectorAll<HTMLElement>('.progress .bar')];
+    const error = form.querySelector<HTMLElement>('.error')!;
+    const btn = (a: string) => form.querySelector<HTMLButtonElement>(`[data-action="${a}"]`)!;
+    const labels = JSON.parse(form.dataset.summary ?? '{}') as Record<string, string>;
+    let current = 0;
+
+    form.classList.add('js');
+
+    // Pre-select a trip from ?trip=slug (linked from itinerary pages).
+    const wanted = new URLSearchParams(location.search).get('trip');
+    if (wanted) {
+      const radio = form.querySelector<HTMLInputElement>(`input[name="trip"][value="${CSS.escape(wanted)}"]`);
+      if (radio) radio.checked = true;
+    }
+
+    function show(i: number) {
+      current = i;
+      steps.forEach((s, n) => (s.hidden = n !== i));
+      bars.forEach((b, n) => b.classList.toggle('on', n <= i));
+      const last = i === steps.length - 1;
+      btn('back').disabled = i === 0;
+      btn('next').hidden = last;
+      btn('submit').hidden = !last;
+      btn('whatsapp').hidden = !last;
+      error.hidden = true;
+    }
+
+    function valid(step: HTMLFieldSetElement) {
+      const fields = [...step.querySelectorAll<HTMLInputElement>('input, select, textarea')];
+      const bad = fields.find((f) => !f.checkValidity());
+      if (bad) {
+        error.textContent = form!.dataset.required ?? '';
+        error.hidden = false;
+        bad.focus();
+        return false;
+      }
+      error.hidden = true;
+      return true;
+    }
+
+    function summary() {
+      const d = new FormData(form!);
+      const trip = form!.querySelector<HTMLInputElement>('input[name="trip"]:checked')?.dataset.label;
+      const rows: [string, string | undefined][] = [
+        [labels.trip, trip],
+        [labels.arrival, d.get('arrival') as string],
+        [labels.days, d.get('days') as string],
+        [labels.flexible, d.get('flexible') ? labels.yes : undefined],
+        [labels.adults, d.get('adults') as string],
+        [labels.children, d.get('children') as string],
+        [labels.ages, d.get('ages') as string],
+        [labels.budget, d.get('budget') as string],
+        [labels.interests, d.getAll('interests').join(', ')],
+        [labels.name, d.get('name') as string],
+        [labels.email, d.get('email') as string],
+        [labels.phone, `${d.get('cc')} ${d.get('phone')}`.trim()],
+        [labels.notes, d.get('notes') as string],
+      ];
+      return [labels.intro, '', ...rows.filter(([, v]) => v && String(v).trim()).map(([k, v]) => `${k}: ${v}`)].join('\n');
+    }
+
+    btn('next').addEventListener('click', () => {
+      if (valid(steps[current])) show(current + 1);
+    });
+    btn('back').addEventListener('click', () => show(Math.max(0, current - 1)));
+    btn('whatsapp').addEventListener('click', () => {
+      if (!valid(steps[current])) return;
+      window.open(`https://wa.me/${form.dataset.wa}?text=${encodeURIComponent(summary())}`, '_blank', 'noopener');
+    });
+    /**
+     * PLACEHOLDER — not wired to anything yet. Replace the body with a real POST
+     * (e.g. a Cloudflare Worker or form service) and throw on failure; the UI below
+     * already waits for it and shows the thank-you step when it resolves.
+     */
+    async function sendEnquiry(_data: FormData, _summary: string): Promise<void> {
+      await new Promise((r) => setTimeout(r, 400));
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!valid(steps[current])) return;
+      const submit = btn('submit');
+      submit.disabled = true;
+      try {
+        const text = summary();
+        await sendEnquiry(new FormData(form), text);
+        // Thank-you step: hide the wizard, keep the summary ready for WhatsApp.
+        steps.forEach((s) => (s.hidden = true));
+        bars.forEach((b) => b.classList.add('on'));
+        form.querySelector<HTMLElement>('.actions')!.hidden = true;
+        error.hidden = true;
+        const done = form.querySelector<HTMLElement>('.done')!;
+        done.querySelector<HTMLAnchorElement>('[data-done-wa]')!.href =
+          `https://wa.me/${form.dataset.wa}?text=${encodeURIComponent(text)}`;
+        done.hidden = false;
+        form.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        done.querySelector<HTMLElement>('h2')!.focus({ preventScroll: true });
+      } catch {
+        error.textContent = form.dataset.required ?? '';
+        error.hidden = false;
+      } finally {
+        submit.disabled = false;
+      }
+    });
+
+    show(0);
+  }
+</script>
+
+<style>
+  .planner-page {
+    padding: clamp(32px, 5vw, 72px) var(--gutter) 88px;
+  }
+  .card {
+    max-width: 760px;
+    margin-inline: auto;
+    padding: clamp(24px, 4vw, 40px);
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    font-family: var(--font-display);
+  }
+  .progress {
+    display: none;
+    gap: 6px;
+    margin-bottom: 28px;
+  }
+  .card.js .progress {
+    display: flex;
+  }
+  .bar {
+    flex: 1;
+    height: 2px;
+    background: var(--line);
+    transition: background-color 240ms ease-out;
+  }
+  .bar.on {
+    background: var(--forest);
+  }
+  .step {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 16px;
+  }
+  .card:not(.js) .step + .step {
+    margin-top: 48px;
+  }
+  legend {
+    display: grid;
+    gap: 4px;
+    padding: 0;
+    margin-bottom: 12px;
+  }
+  .step-of {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    margin-bottom: 20px;
+  }
+  .card:not(.js) .step-of {
+    margin-top: 0;
+    margin-bottom: 8px;
+  }
+  .sub {
+    color: var(--forest-82);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 26px;
+  }
+  .options {
+    display: grid;
+    gap: 14px;
+  }
+  .options.two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .option {
+    position: relative;
+    display: grid;
+    gap: 4px;
+    padding: 20px;
+    padding-inline-end: 48px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color 160ms ease-out, box-shadow 160ms ease-out;
+  }
+  .option.center {
+    text-align: center;
+    padding-inline: 20px 48px;
+    padding-block: 16px;
+  }
+  .option input,
+  .chip input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .option:has(input:checked) {
+    border-color: var(--forest);
+    box-shadow: inset 0 0 0 1px var(--forest);
+  }
+  .option:has(input:focus-visible),
+  .chip:has(input:focus-visible) {
+    outline: 2px solid var(--fire);
+    outline-offset: 2px;
+  }
+  .opt-title {
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+  .opt-sub {
+    font-size: 13px;
+    line-height: 20px;
+    color: var(--forest-82);
+  }
+  .tick {
+    position: absolute;
+    top: 16px;
+    inset-inline-end: 16px;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    background: var(--forest);
+    color: var(--white);
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity 160ms ease-out, transform 160ms ease-out;
+  }
+  .option.center .tick {
+    top: 50%;
+    margin-top: -10px;
+  }
+  .option:has(input:checked) .tick {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .fields.two {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .field {
+    display: grid;
+    gap: 8px;
+  }
+  .flabel,
+  .group-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  :global(:root[lang='ar']) .flabel,
+  :global(:root[lang='ar']) .group-label,
+  :global(:root[lang='ar']) .step-of {
+    font-size: 13px;
+    letter-spacing: 0;
+  }
+  .group-label {
+    margin-top: 8px;
+  }
+  .field input,
+  .field textarea,
+  .phone select,
+  .phone input {
+    width: 100%;
+    min-height: 54px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    font-size: 16px;
+    transition: border-color 160ms ease-out;
+  }
+  .field textarea {
+    resize: vertical;
+    font-family: inherit;
+  }
+  .field input:focus,
+  .field textarea:focus,
+  .phone select:focus,
+  .phone input:focus {
+    outline: none;
+    border-color: var(--forest);
+  }
+  .field input::placeholder,
+  .field textarea::placeholder {
+    color: var(--forest-82);
+    opacity: 0.7;
+  }
+  :global(:root[lang='ar']) .field input[dir='ltr'] {
+    text-align: right;
+  }
+  .phone {
+    display: flex;
+  }
+  .phone select {
+    width: auto;
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+    border-inline-end: 0;
+    background: var(--white);
+  }
+  .phone input {
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+  }
+  .check {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .check input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--forest);
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    line-height: 20px;
+    cursor: pointer;
+  }
+  .chip :global(svg) {
+    display: none;
+  }
+  .chip:has(input:checked) {
+    border-color: var(--forest);
+    box-shadow: inset 0 0 0 1px var(--forest);
+  }
+  .chip:has(input:checked) :global(svg) {
+    display: block;
+  }
+  .error {
+    margin-top: 16px;
+    color: var(--fire);
+    font-size: 14px;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-top: 36px;
+  }
+  .card:not(.js) .actions [data-action='next'],
+  .card:not(.js) .actions [data-action='back'] {
+    display: none;
+  }
+  .end {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 4px;
+    border: 0;
+    background: none;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .back:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .btn-wa {
+    border-color: #25d366;
+    color: #128c4b;
+    background: transparent;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-wa:hover {
+      background: #25d3661a;
+    }
+    .option:hover,
+    .chip:hover {
+      border-color: var(--forest-45);
+    }
+  }
+  .done {
+    display: grid;
+    justify-items: center;
+    gap: 14px;
+    padding-block: 32px 8px;
+    text-align: center;
+  }
+  .done h2:focus {
+    outline: none;
+  }
+  .done .sub {
+    max-width: 480px;
+  }
+  .done-icon {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--ivory);
+    color: var(--forest);
+  }
+  .done-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 14px 24px;
+    margin-top: 10px;
+  }
+  .done-actions .back {
+    text-decoration: none;
+  }
+  @media (max-width: 600px) {
+    .options.two,
+    .fields.two {
+      grid-template-columns: 1fr;
+    }
+    .end,
+    .end .btn {
+      width: 100%;
+    }
+  }
+</style>
